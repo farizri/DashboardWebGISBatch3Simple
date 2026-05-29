@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  CalendarDays, ScrollText, MessageCircle, Clock, Video,
+  ScrollText, MessageCircle, Clock, Video,
   Map, Zap, CheckCircle2, Timer, Wrench, User, Target,
   GraduationCap, Loader2,
 } from "lucide-react";

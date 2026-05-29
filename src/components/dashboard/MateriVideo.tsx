@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { BookOpen, Video, FolderOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { MateriRow } from "@/lib/supabase";
@@ -76,10 +77,13 @@ export default function MateriVideo() {
           <div key={materi.session_no} className={styles.card}>
             <div className={styles.thumbnailWrapper}>
               {materi.youtube_id ? (
-                <img
-                  src={`https://img.youtube.com/vi/${materi.youtube_id}/hqdefault.jpg`}
-                  alt={materi.title}
-                  className={styles.thumbnail}
+                <Image
+                   src={`https://img.youtube.com/vi/${materi.youtube_id}/hqdefault.jpg`}
+                   alt={materi.title}
+                   className={styles.thumbnail}
+                   width={480}
+                   height={360}
+                   unoptimized
                 />
               ) : (
                 <div className={styles.thumbnailPlaceholder} />

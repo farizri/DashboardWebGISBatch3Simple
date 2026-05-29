@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Timer, Home, Trophy, Award, Star, Shield, Brain, Map } from "lucide-react";
 import styles from "./quiz.module.css";
@@ -212,10 +213,13 @@ export default function QuizPage() {
             {/* Optional Question Image */}
             {currentQuestion.image && (
               <div className={styles.imageWrapper}>
-                <img
+                <Image
                   className={styles.questionImage}
                   src={currentQuestion.image}
                   alt={currentQuestion.question}
+                  width={400}
+                  height={300}
+                  unoptimized
                 />
               </div>
             )}

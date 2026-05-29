@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { QuizQuestion } from "../../lib/quiz-data";
 import { sfx } from "../../lib/sound";
 import { supabase } from "../../lib/supabase";
 import {
-  Globe, Trophy, Check, User, Play,
+  Globe, Trophy, Play,
   BarChart2, Wrench, Home, Star, ThumbsUp, Target,
 } from "lucide-react";
 import styles from "./F1PaddockQuiz.module.css";
@@ -103,8 +104,8 @@ export default function F1PaddockQuiz() {
   const [answersStatus, setAnswersStatus] = useState<("CORRECT" | "INCORRECT" | "UNANSWERED")[]>([]);
   const [score, setScore] = useState<number>(0);
   // Standings Leaderboard mock list + User dynamic slot
-  const [standings, setStandings] = useState<ClassStanding[]>([]);
-  const [collectiveQuizzes, setCollectiveQuizzes] = useState<CollectiveQuizEntry[]>([]);
+  const [, setStandings] = useState<ClassStanding[]>([]);
+  const [, setCollectiveQuizzes] = useState<CollectiveQuizEntry[]>([]);
   
   // Questions bank fetched from Supabase
   const [questionsBank, setQuestionsBank] = useState<Record<number, QuizQuestion[]>>({});
@@ -141,10 +142,7 @@ export default function F1PaddockQuiz() {
   }, []);
 
   // Standing Session Limit & Database Tab state
-  const [leaderboardSessionLimit, setLeaderboardSessionLimit] = useState<number>(6);
-  const [activeDbTab, setActiveDbTab] = useState<"checklist" | "log">("checklist");
-  const [leaderboardPage, setLeaderboardPage] = useState<number>(0);
-  const ITEMS_PER_PAGE = 6;
+  const leaderboardSessionLimit = 6;
 
   // Helper to get active user high scores from localStorage
   const getUserHighScoreForSession = (session: number): number | null => {
@@ -339,7 +337,7 @@ export default function F1PaddockQuiz() {
 
   // Trigger standings recalculation when the limit changes
   useEffect(() => {
-    updateStandingsList();
+    updateStandingsList(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [leaderboardSessionLimit, updateStandingsList]);
 
 
@@ -560,10 +558,13 @@ export default function F1PaddockQuiz() {
 
               {questions[currentIdx].image && (
                 <div className={styles.questionImageWrapper}>
-                  <img
+                  <Image
                     src={questions[currentIdx].image}
                     alt="Gambar soal"
                     className={styles.questionImage}
+                    width={400}
+                    height={300}
+                    unoptimized
                   />
                 </div>
               )}

@@ -152,7 +152,7 @@ export default function AdminEditorPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll]); // eslint-disable-line react-hooks/set-state-in-effect
 
   // ── Config helpers ────────────────────────────────────────
 
@@ -505,7 +505,7 @@ export default function AdminEditorPage() {
                 />
               </div>
               <p style={{ fontSize: 12, color: "#64748b" }}>
-                Link ini akan ditampilkan sebagai tombol <strong>"Isi Absensi Sekarang"</strong> di halaman Absensi dashboard peserta.
+                Link ini akan ditampilkan sebagai tombol <strong>&quot;Isi Absensi Sekarang&quot;</strong> di halaman Absensi dashboard peserta.
               </p>
               <SaveRow
                 onSave={() => saveConfig(["attendance_link"])}
