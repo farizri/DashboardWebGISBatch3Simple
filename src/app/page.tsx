@@ -47,6 +47,8 @@ function DashboardContent() {
       return <FinalProjectComing />;
     case "quiz":
       return <F1PaddockQuiz />;
+    case "scoreboard":
+      return <F1PaddockQuiz />;
     case "links":
       return <LinkPendukung />;
     default:

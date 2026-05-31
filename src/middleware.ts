@@ -22,15 +22,7 @@ export async function middleware(request: NextRequest) {
 
     try {
       await jwtVerify(token, JWT_SECRET);
-      const response = NextResponse.next();
-      response.cookies.set("admin_token", token, {
-        httpOnly: false,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24,
-        path: "/",
-      });
-      return response;
+      return NextResponse.next();
     } catch {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }

@@ -12,6 +12,8 @@ import {
   Settings2,
   Trophy,
   Link2,
+  Shield,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -57,6 +59,18 @@ const MENU_SECTIONS: MenuSection[] = [
       { id: "final_project", name: "Final Project", icon: Trophy },
     ],
   },
+  {
+    title: "SCOREBOARD",
+    items: [
+      { id: "scoreboard", name: "Class Standing", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "ADMIN",
+    items: [
+      { id: "admin", name: "Admin Panel", icon: Shield },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -88,10 +102,11 @@ export default function Sidebar() {
               {section.items.map((item) => {
                 const isActive = currentTab === item.id;
                 const Icon = item.icon;
+                const href = item.id === "admin" ? "/admin" : `/?tab=${item.id}`;
                 return (
                   <Link
                     key={item.id}
-                    href={`/?tab=${item.id}`}
+                    href={href}
                     className={`${styles.menuLink} ${isActive ? styles.activeLink : ""}`}
                   >
                     <span className={styles.menuIcon}>

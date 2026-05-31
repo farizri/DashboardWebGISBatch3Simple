@@ -30,11 +30,6 @@ export default function AdminLoginPage() {
         return;
       }
 
-      if (data.token) {
-        document.cookie = `admin_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
-        localStorage.setItem("admin_token_backup", data.token);
-      }
-
       router.push("/admin");
     } catch {
       setError("Tidak dapat terhubung ke server");

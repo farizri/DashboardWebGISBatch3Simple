@@ -522,6 +522,28 @@ export default function F1PaddockQuiz() {
 
       {quizState === "PLAYING" && questions.length > 0 && (
         <div className={styles.gameContainer}>
+          {/* Question Grid Lights */}
+          <div className={styles.telemetryLightsPanel}>
+            <span className={styles.telemetryLabel}>STATUS SOAL POST TEST</span>
+            <div className={styles.lightsRow}>
+              {answersStatus.map((status, idx) => (
+                <div
+                  key={idx}
+                  className={`${styles.lightLed} ${
+                    idx === currentIdx
+                      ? styles.lightCurrent
+                      : status === "CORRECT"
+                      ? styles.lightCorrect
+                      : status === "INCORRECT"
+                      ? styles.lightIncorrect
+                      : styles.lightUnanswered
+                  }`}
+                >
+                  <span className={styles.lightNum}>{idx + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className={styles.mainGameArea}>
             {/* Question Panel */}
