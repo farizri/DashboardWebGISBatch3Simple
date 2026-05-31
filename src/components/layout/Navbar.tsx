@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Trophy, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
@@ -12,9 +12,6 @@ export default function Navbar() {
         </Link>
       </div>
       <div className={styles.navLinks}>
-        <Link href="/leaderboard" className={`${styles.navLink} ${styles.leaderboardLink}`}>
-          <Trophy size={14} /> Scoreboard
-        </Link>
         <Link href="/admin?tab=overview" className={`${styles.navLink} ${styles.adminLink}`}>
           <Settings size={14} /> Admin
         </Link>

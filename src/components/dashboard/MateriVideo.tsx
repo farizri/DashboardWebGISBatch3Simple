@@ -1,12 +1,27 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { BookOpen, PlayCircle, ExternalLink } from "lucide-react";
 import styles from "./MateriVideo.module.css";
-
-const GITHUB_URL  = "https://github.com/mapid-academy/webgis-bootcamp-batch3";
-const YOUTUBE_URL = "https://www.youtube.com/@mapid_official";
+import { supabase } from "../../lib/supabase";
 
 export default function MateriVideo() {
+  const [materiUrl, setMateriUrl] = useState("");
+  const [playlistUrl, setPlaylistUrl] = useState("");
+
+  useEffect(() => {
+    supabase
+      .from("site_config")
+      .select("key,value")
+      .in("key", ["materi_link", "playlist_link"])
+      .then(({ data }) => {
+        (data || []).forEach((r: { key: string; value: string }) => {
+          if (r.key === "materi_link") setMateriUrl(r.value);
+          if (r.key === "playlist_link") setPlaylistUrl(r.value);
+        });
+      });
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -36,10 +51,14 @@ export default function MateriVideo() {
             <div className={styles.cardDecorDots} />
           </div>
           <div className={styles.cardBody}>
-            <p>Seluruh modul materi coding setiap sesi tersedia di repositori GitHub MAPID Academy. Akses langsung untuk referensi dan pengerjaan tugas.</p>
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`${styles.linkBtn} ${styles.linkBtnGithub}`}>
-              <ExternalLink size={15} /> Buka GitHub Materi
-            </a>
+            <p>Seluruh modul materi coding setiap sesi tersedia di repositori MAPID Academy. Akses langsung untuk referensi dan pengerjaan tugas.</p>
+            {materiUrl ? (
+              <a href={materiUrl} target="_blank" rel="noopener noreferrer" className={`${styles.linkBtn} ${styles.linkBtnGithub}`}>
+                <ExternalLink size={15} /> Buka Materi
+              </a>
+            ) : (
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>Link belum tersedia</span>
+            )}
           </div>
         </div>
 
@@ -64,9 +83,13 @@ export default function MateriVideo() {
           </div>
           <div className={styles.cardBody}>
             <p>Rekaman video setiap sesi live class tersedia di YouTube Playlist MAPID Academy. Tonton ulang kapan saja sesuai kebutuhanmu.</p>
-            <a href={YOUTUBE_URL} target="_blank" rel="noopener noreferrer" className={`${styles.linkBtn} ${styles.linkBtnYoutube}`}>
-              <PlayCircle size={15} /> Buka YouTube Playlist
-            </a>
+            {playlistUrl ? (
+              <a href={playlistUrl} target="_blank" rel="noopener noreferrer" className={`${styles.linkBtn} ${styles.linkBtnYoutube}`}>
+                <PlayCircle size={15} /> Buka YouTube Playlist
+              </a>
+            ) : (
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>Link belum tersedia</span>
+            )}
           </div>
         </div>
 

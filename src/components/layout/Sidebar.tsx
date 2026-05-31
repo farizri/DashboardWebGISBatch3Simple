@@ -13,7 +13,6 @@ import {
   Trophy,
   Link2,
   Shield,
-  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -57,12 +56,6 @@ const MENU_SECTIONS: MenuSection[] = [
     title: "PORTFOLIO",
     items: [
       { id: "final_project", name: "Final Project", icon: Trophy },
-    ],
-  },
-  {
-    title: "SCOREBOARD",
-    items: [
-      { id: "scoreboard", name: "Class Standing", icon: BarChart3 },
     ],
   },
   {

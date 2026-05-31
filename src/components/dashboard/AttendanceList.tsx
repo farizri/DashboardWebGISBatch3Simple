@@ -1,56 +1,105 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Lightbulb } from "lucide-react";
+import { ClipboardList, Lightbulb, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import styles from "./AttendanceList.module.css";
 
-const PARTICIPANTS = [
-  "Kalvin Reza Pratama",
-  "Rafi Fistra Ali",
-  "Binar Aulia Setyawan",
-  "Athirah Hamzah",
-  "Azya Naurah Sumakhalda",
-  "Robertho Kadji",
-  "Rinjani Putri Djunaedi",
-  "Rizki Amara Putri",
-  "Muhammad Thariq Aziz",
-  "Adinda Dwi Yulianto",
-];
-
-// attendanceMap[participant][session_no] = attended
 type AttendanceMap = Record<string, Record<number, boolean>>;
+
+interface SessionInfo {
+  session_no: number;
+  number_label: string;
+  title: string;
+  session_date: string;
+}
+
+interface Participant {
+  name: string;
+}
+
+function getTodayDateStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getCurrentTimeStr(): string {
+  const now = new Date();
+  return now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+}
 
 export default function AttendanceList() {
   const [attendanceMap, setAttendanceMap] = useState<AttendanceMap>({});
-  const [loading, setLoading] = useState(true);
+  const [participants, setParticipants]   = useState<string[]>([]);
+  const [sessions, setSessions]           = useState<SessionInfo[]>([]);
+  const [loading, setLoading]             = useState(true);
+
+  // Form state
+  const [selectedName, setSelectedName]   = useState("");
+  const [checkInTime, setCheckInTime]     = useState(getCurrentTimeStr());
+  const [submitting, setSubmitting]       = useState(false);
+  const [submitResult, setSubmitResult]   = useState<"success" | "already" | "error" | null>(null);
+
+  const today = getTodayDateStr();
+  const todaySession = sessions.find(s => s.session_date === today) ?? null;
 
   useEffect(() => {
-    async function fetchAttendance() {
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("participant, session_no, attended")
-        .order("session_no");
-
-      if (error) {
-        console.error("Error fetching attendance:", error);
-        setLoading(false);
-        return;
-      }
+    async function load() {
+      const [{ data: att }, { data: sess }, { data: pList }] = await Promise.all([
+        supabase.from("attendance").select("participant, session_no, attended").order("session_no"),
+        supabase.from("config_sessions").select("session_no, number_label, title, session_date").order("sort_order"),
+        supabase.from("config_participants").select("name").order("sort_order"),
+      ]);
 
       const map: AttendanceMap = {};
-      PARTICIPANTS.forEach((p) => { map[p] = {}; });
-      (data ?? []).forEach((row) => {
-        if (map[row.participant]) {
-          map[row.participant][row.session_no] = row.attended;
-        }
+      (pList || []).forEach((p: Participant) => { map[p.name] = {}; });
+      (att ?? []).forEach((row: { participant: string; session_no: number; attended: boolean }) => {
+        if (map[row.participant]) map[row.participant][row.session_no] = row.attended;
       });
+
       setAttendanceMap(map);
+      setSessions((sess as SessionInfo[]) || []);
+      const names = (pList || []).map((p: Participant) => p.name);
+      setParticipants(names);
+      if (names.length > 0) setSelectedName(names[0]);
       setLoading(false);
     }
-
-    fetchAttendance();
+    load();
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedName || !todaySession) return;
+
+    const alreadyMarked = attendanceMap[selectedName]?.[todaySession.session_no];
+    if (alreadyMarked) {
+      setSubmitResult("already");
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase.from("attendance").upsert(
+      { participant: selectedName, session_no: todaySession.session_no, attended: true },
+      { onConflict: "participant,session_no" }
+    );
+
+    if (error) {
+      setSubmitResult("error");
+    } else {
+      setAttendanceMap(prev => ({
+        ...prev,
+        [selectedName]: { ...(prev[selectedName] || {}), [todaySession.session_no]: true },
+      }));
+      setSubmitResult("success");
+    }
+    setSubmitting(false);
+    setTimeout(() => setSubmitResult(null), 5000);
+  };
+
+  const allSessionNos = Array.from({ length: Math.max(17, sessions.length) }, (_, i) => i + 1);
 
   if (loading) {
     return <div className={styles.loading}>Memuat data absensi...</div>;
@@ -68,20 +117,102 @@ export default function AttendanceList() {
 
       {/* Summary Cards */}
       <div className={styles.summaryGrid}>
+        {/* Attendance Form Card */}
         <div className={styles.summaryCard}>
           <span className={styles.cardLabel}>Pengisian Absensi Kelas</span>
           <h3 className={styles.cardTitle}>Isi Kehadiran Sesi Sekarang</h3>
-          <p className={styles.cardDesc}>
-            Silakan klik tautan tombol di bawah ini untuk mengisi absensi kehadiran kelas hari ini melalui formulir resmi MAPID Academy.
-          </p>
-          <a
-            href="https://forms.gle/mapid-academy-attendance"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.fillAttendanceBtn}
-          >
-            Isi Absensi Sekarang
-          </a>
+
+          {!todaySession ? (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginTop: "12px",
+              background: "#fef9c3", border: "1px solid #fde047", borderRadius: "8px", padding: "12px" }}>
+              <AlertCircle size={16} color="#ca8a04" style={{ flexShrink: 0, marginTop: 2 }} />
+              <p style={{ margin: 0, fontSize: 13, color: "#713f12", lineHeight: 1.5 }}>
+                Absensi tidak tersedia hari ini. Form absensi hanya bisa diisi pada hari jadwal sesi berlangsung.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+              {/* Session info badge */}
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "10px 12px" }}>
+                <p style={{ margin: 0, fontSize: 12, color: "#1d4ed8", fontWeight: 700 }}>
+                  {todaySession.number_label} — {todaySession.title}
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "#3b82f6" }}>
+                  {new Date(today).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              </div>
+
+              {/* Name dropdown */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
+                  Nama Peserta
+                </label>
+                <select
+                  value={selectedName}
+                  onChange={e => setSelectedName(e.target.value)}
+                  required
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px",
+                    border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b",
+                    background: "#fff", outline: "none" }}
+                >
+                  {participants.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              {/* Time input */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
+                  <Clock size={12} style={{ display: "inline", marginRight: 4 }} />
+                  Jam Hadir
+                </label>
+                <input
+                  type="time"
+                  value={checkInTime.replace(".", ":")}
+                  onChange={e => setCheckInTime(e.target.value)}
+                  required
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px",
+                    border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b",
+                    background: "#fff", outline: "none" }}
+                />
+              </div>
+
+              {/* Submit feedback */}
+              {submitResult === "success" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px",
+                  background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "8px", padding: "10px 12px" }}>
+                  <CheckCircle size={16} color="#16a34a" />
+                  <span style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>
+                    Absensi berhasil dicatat!
+                  </span>
+                </div>
+              )}
+              {submitResult === "already" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px",
+                  background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "8px", padding: "10px 12px" }}>
+                  <AlertCircle size={16} color="#d97706" />
+                  <span style={{ fontSize: 13, color: "#92400e" }}>
+                    {selectedName} sudah mengisi absensi sesi ini.
+                  </span>
+                </div>
+              )}
+              {submitResult === "error" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px",
+                  background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 12px" }}>
+                  <AlertCircle size={16} color="#dc2626" />
+                  <span style={{ fontSize: 13, color: "#991b1b" }}>Terjadi kesalahan. Coba lagi.</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting || !selectedName}
+                className={styles.fillAttendanceBtn}
+                style={{ marginTop: 0, opacity: submitting ? 0.6 : 1, cursor: submitting ? "not-allowed" : "pointer" }}
+              >
+                {submitting ? "Menyimpan..." : "Isi Absensi Sekarang"}
+              </button>
+            </form>
+          )}
         </div>
 
         <div className={`${styles.summaryCard} ${styles.infoCard}`}>
@@ -95,7 +226,7 @@ export default function AttendanceList() {
         </div>
       </div>
 
-      {/* Attendance Table Card */}
+      {/* Attendance Table */}
       <div className={styles.tableCard}>
         <div className={styles.cardHeader}>
           <h3>Checklist Rekapitulasi Kehadiran Peserta</h3>
@@ -107,27 +238,23 @@ export default function AttendanceList() {
             <thead>
               <tr>
                 <th className={styles.stickyCol}>Peserta</th>
-                {Array.from({ length: 17 }).map((_, i) => (
-                  <th key={i}>Sesi {i + 1}</th>
+                {allSessionNos.map(i => (
+                  <th key={i}>Sesi {i}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {PARTICIPANTS.map((name) => (
+              {participants.map(name => (
                 <tr key={name}>
-                  <td className={styles.stickyCol}>
-                    <span>{name}</span>
-                  </td>
-                  {Array.from({ length: 17 }).map((_, i) => {
-                    const sessionNo = i + 1;
+                  <td className={styles.stickyCol}><span>{name}</span></td>
+                  {allSessionNos.map(sessionNo => {
                     const isPresent = !!(attendanceMap[name]?.[sessionNo]);
                     return (
-                      <td key={i} style={{ textAlign: "center" }}>
-                        {isPresent ? (
-                          <span className={styles.presentBadge}>✓</span>
-                        ) : (
-                          <span className={styles.absentBadge}>-</span>
-                        )}
+                      <td key={sessionNo} style={{ textAlign: "center" }}>
+                        {isPresent
+                          ? <span className={styles.presentBadge}>✓</span>
+                          : <span className={styles.absentBadge}>-</span>
+                        }
                       </td>
                     );
                   })}

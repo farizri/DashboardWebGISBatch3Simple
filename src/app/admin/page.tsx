@@ -16,10 +16,6 @@ import styles from "./admin.module.css";
 // ─── Types ───────────────────────────────────────────────
 interface Participant { id?: string; name: string; email: string; sort_order: number; }
 interface TaskItem    { id?: string; task_order: number; number: string; title: string; phase: string; }
-interface MateriItem  {
-  id?: string; session_no: number; number_label: string; title: string; category: string;
-  materi_url: string; playlist_url: string; youtube_id: string; topics: string[];
-}
 interface QuizScore   { participant: string; session_key: number; score: number; }
 interface QuizQuestion {
   id?: string; session_key: number; sort_order: number;
@@ -46,13 +42,6 @@ const QUIZ_SESSIONS = [
   "Sesi 15: WebGIS Refinement and Deployment",
   "Sesi 16 & 17: Python for Spatial Data (Bonus)",
 ];
-
-const CATEGORY_COLOR: Record<string, string> = {
-  Concept:  "#6366f1",
-  Frontend: "#0ea5e9",
-  WebMap:   "#10b981",
-  Python:   "#f59e0b",
-};
 
 // ─── Main Router ──────────────────────────────────────────
 function AdminContent() {
@@ -173,7 +162,7 @@ function TabTatib() {
 
   const handleSave = async () => {
     setSaving(true);
-    const entries = Object.entries(cfg).map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
+    const entries = [{ key: "zoom_link", value: cfg["zoom_link"] || "", updated_at: new Date().toISOString() }];
     await supabase.from("site_config").upsert(entries, { onConflict: "key" });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
@@ -197,46 +186,29 @@ function TabTatib() {
 
       <div className={styles.card}>
         <div className={styles.cardTitle}><ScrollText size={14} /> Tata Tertib & Ketentuan Akademik</div>
-        {[1,2,3,4].map(n => (
-          <div key={n} className={styles.ruleCard}>
+        <p style={{ fontSize: 12, color: "#64748b", marginTop: -8 }}>Ketentuan akademik bersifat tetap dan tidak dapat diubah melalui admin panel.</p>
+        {[
+          { title: "Penyelesaian Post Test",           desc: "Post test wajib diisi setiap selesai mengikuti masing-masing sesi pertemuan." },
+          { title: "Konektivitas Tugas Terintegrasi",  desc: "Tugas mingguan (Sesi 1–15) saling berkesinambungan membentuk final project WebGIS mandiri." },
+          { title: "Evaluasi Logika Mandiri",          desc: "Penilaian berfokus pada pemahaman sintaks. AI diperbolehkan sebagai asisten logika, bukan full generate." },
+          { title: "Fokus Penilaian Portofolio",       desc: "Dievaluasi atas: Storytelling, UI/UX Peta, fungsionalitas WebGIS, dan hasil deploy cloud." },
+        ].map((r, i) => (
+          <div key={i} className={styles.ruleCard}>
             <div className={styles.ruleHeader}>
-              <span className={styles.ruleNum}>{n}</span>
+              <span className={styles.ruleNum}>{i + 1}</span>
               <div style={{ flex: 1 }}>
-                <input className={styles.input} placeholder={`Judul ketentuan ${n}`}
-                  value={cfg[`tata_tertib_${n}_title`] || ""} onChange={e => set(`tata_tertib_${n}_title`, e.target.value)} />
+                <strong style={{ fontSize: 13, color: "#1e293b" }}>{r.title}</strong>
+                <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0" }}>{r.desc}</p>
               </div>
             </div>
-            <textarea className={styles.textarea} placeholder="Deskripsi ketentuan..."
-              value={cfg[`tata_tertib_${n}_desc`] || ""} onChange={e => set(`tata_tertib_${n}_desc`, e.target.value)} />
           </div>
         ))}
       </div>
 
       <div className={styles.card}>
-        <div className={styles.cardTitle}><Users size={14} /> Fasilitator</div>
-        <div className={styles.formGrid}>
-          <div className={styles.field}><label>Nama Fasilitator 1</label>
-            <input className={styles.input} value={cfg["fasilitator_1_name"] || ""} onChange={e => set("fasilitator_1_name", e.target.value)} placeholder="Farah" /></div>
-          <div className={styles.field}><label>No. WhatsApp Fasilitator 1</label>
-            <input className={styles.input} value={cfg["fasilitator_1_phone"] || ""} onChange={e => set("fasilitator_1_phone", e.target.value)} placeholder="628xxx" /></div>
-          <div className={styles.field}><label>Nama Fasilitator 2</label>
-            <input className={styles.input} value={cfg["fasilitator_2_name"] || ""} onChange={e => set("fasilitator_2_name", e.target.value)} placeholder="Rofi" /></div>
-          <div className={styles.field}><label>No. WhatsApp Fasilitator 2</label>
-            <input className={styles.input} value={cfg["fasilitator_2_phone"] || ""} onChange={e => set("fasilitator_2_phone", e.target.value)} placeholder="628xxx" /></div>
-        </div>
-      </div>
-
-      <div className={styles.card}>
         <div className={styles.cardTitle}><ExternalLink size={14} /> Link Platform</div>
-        <div className={styles.formGrid}>
-          <div className={styles.field}><label>Link Discord</label>
-            <input className={styles.input} value={cfg["discord_link"] || ""} onChange={e => set("discord_link", e.target.value)} placeholder="https://discord.gg/..." /></div>
-          <div className={styles.field}><label>Link Zoom</label>
-            <input className={styles.input} value={cfg["zoom_link"] || ""} onChange={e => set("zoom_link", e.target.value)} placeholder="https://zoom.us/j/..." /></div>
-          <div className={styles.field}><label>Zoom Meeting ID</label>
-            <input className={styles.input} value={cfg["zoom_meeting_id"] || ""} onChange={e => set("zoom_meeting_id", e.target.value)} placeholder="882 1928 3192" /></div>
-          <div className={styles.field}><label>Zoom Passcode</label>
-            <input className={styles.input} value={cfg["zoom_passcode"] || ""} onChange={e => set("zoom_passcode", e.target.value)} placeholder="mapidacademy" /></div>
+        <div className={styles.field}><label>Link Zoom</label>
+          <input className={styles.input} value={cfg["zoom_link"] || ""} onChange={e => set("zoom_link", e.target.value)} placeholder="https://zoom.us/j/..." />
         </div>
       </div>
     </>
@@ -879,41 +851,29 @@ function TabTugas() {
 // TAB: MATERI & REKAMAN
 // ════════════════════════════════════════════════════════
 function TabMateri() {
-  const [sessions, setSessions] = useState<MateriItem[]>([]);
-  const [openIdx, setOpenIdx]   = useState<number | null>(null);
-  const [saving, setSaving]     = useState<number | null>(null);
-  const [saved, setSaved]       = useState<number | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [materiLink, setMateriLink]     = useState("");
+  const [playlistLink, setPlaylistLink] = useState("");
+  const [saving, setSaving]             = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
-    supabase.from("config_materi").select("*").order("session_no").then(({ data }) => {
-      const parsed = (data || []).map((r: MateriItem & { topics: unknown }) => ({
-        ...r, topics: Array.isArray(r.topics) ? r.topics : [],
-      }));
-      setSessions(parsed as MateriItem[]);
+    supabase.from("site_config").select("key,value").in("key", ["materi_link", "playlist_link"]).then(({ data }) => {
+      (data || []).forEach((r: { key: string; value: string }) => {
+        if (r.key === "materi_link")   setMateriLink(r.value);
+        if (r.key === "playlist_link") setPlaylistLink(r.value);
+      });
       setLoading(false);
     });
   }, []);
 
-  const update = (i: number, f: keyof MateriItem, v: string | string[] | number) =>
-    setSessions(prev => prev.map((s, idx) => idx === i ? { ...s, [f]: v } : s));
-  const addTopic = (i: number) => setSessions(prev => prev.map((s, idx) => idx === i ? { ...s, topics: [...s.topics, ""] } : s));
-  const updateTopic = (i: number, ti: number, v: string) => setSessions(prev =>
-    prev.map((s, idx) => idx === i ? { ...s, topics: s.topics.map((t, j) => j === ti ? v : t) } : s));
-  const removeTopic = (i: number, ti: number) => setSessions(prev =>
-    prev.map((s, idx) => idx === i ? { ...s, topics: s.topics.filter((_, j) => j !== ti) } : s));
-
-  const handleSave = async (i: number) => {
-    setSaving(i);
-    const item = sessions[i];
-    await supabase.from("config_materi").upsert({ ...item }, { onConflict: "session_no" });
-    setSaving(null); setSaved(i); setTimeout(() => setSaved(null), 2500);
-  };
-
-  const addSession = () => {
-    const nextNo = (sessions[sessions.length - 1]?.session_no || 0) + 1;
-    setSessions(prev => [...prev, { session_no: nextNo, number_label: `Sesi ${nextNo}`, title: "", category: "Concept", materi_url: "", playlist_url: "", youtube_id: "", topics: [] }]);
-    setOpenIdx(sessions.length);
+  const handleSave = async () => {
+    setSaving(true);
+    await supabase.from("site_config").upsert([
+      { key: "materi_link",   value: materiLink,   updated_at: new Date().toISOString() },
+      { key: "playlist_link", value: playlistLink, updated_at: new Date().toISOString() },
+    ], { onConflict: "key" });
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
 
   if (loading) return <div className={styles.loading}>Memuat data materi...</div>;
@@ -923,79 +883,27 @@ function TabMateri() {
       <div className={styles.panelHeader}>
         <div>
           <h2><PlayCircle size={20} /> Materi & Rekaman</h2>
-          <p>Edit konten materi per sesi — klik kartu untuk membuka editor</p>
+          <p>Atur link materi dan video rekaman yang ditampilkan ke peserta</p>
         </div>
-        <button className={styles.saveBtn} onClick={addSession} style={{ background: "#0ea5e9" }}>
-          <Plus size={14} /> Tambah Sesi
-        </button>
+        <div className={styles.rowActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
       </div>
 
-      {sessions.map((item, i) => {
-        const isOpen = openIdx === i;
-        const catColor = CATEGORY_COLOR[item.category] || "#6366f1";
-        return (
-          <div key={item.session_no} className={styles.materiCard}>
-            <div className={`${styles.materiCardHead} ${isOpen ? styles.materiCardHeadOpen : ""}`}
-              onClick={() => setOpenIdx(isOpen ? null : i)}>
-              <div className={styles.materiCardHeadLeft}>
-                <span className={styles.sessionNumBadge}>{item.number_label}</span>
-                <span className={styles.categoryPill} style={{ background: `${catColor}18`, color: catColor }}>{item.category}</span>
-                <span className={styles.materiCardTitle}>{item.title || <i style={{ color: "#94a3b8" }}>Belum ada judul</i>}</span>
-              </div>
-              {isOpen ? <ChevronUp size={16} color="#94a3b8" /> : <ChevronDown size={16} color="#94a3b8" />}
-            </div>
-            {isOpen && (
-              <div className={styles.materiCardBody}>
-                <div className={styles.formGrid}>
-                  <div className={styles.field}><label>Label Sesi</label>
-                    <input className={styles.input} value={item.number_label} onChange={e => update(i,"number_label",e.target.value)} /></div>
-                  <div className={styles.field}><label>Nomor Sesi</label>
-                    <input className={styles.input} type="number" value={item.session_no} onChange={e => update(i,"session_no",Number(e.target.value))} /></div>
-                </div>
-                <div className={styles.field}><label>Judul Materi</label>
-                  <input className={styles.input} value={item.title} onChange={e => update(i,"title",e.target.value)} /></div>
-                <div className={styles.field}>
-                  <label>Kategori / Tag</label>
-                  <div className={styles.categoryBtns}>
-                    {Object.entries(CATEGORY_COLOR).map(([cat, color]) => (
-                      <button key={cat} className={`${styles.catBtn} ${item.category === cat ? styles.catBtnActive : ""}`}
-                        style={item.category === cat ? { background: color, borderColor: color } : {}}
-                        onClick={() => update(i,"category",cat)}>{cat}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.formGrid}>
-                  <div className={styles.field}><label>Link Materi / Slide</label>
-                    <input className={styles.input} value={item.materi_url} onChange={e => update(i,"materi_url",e.target.value)} placeholder="https://..." /></div>
-                  <div className={styles.field}><label>Link Playlist YouTube</label>
-                    <input className={styles.input} value={item.playlist_url} onChange={e => update(i,"playlist_url",e.target.value)} placeholder="https://youtube.com/playlist?..." /></div>
-                </div>
-                <div className={styles.field}><label>YouTube Video ID (embed)</label>
-                  <input className={styles.input} value={item.youtube_id} onChange={e => update(i,"youtube_id",e.target.value)} placeholder="dQw4w9WgXcQ" /></div>
-                <div className={styles.field}>
-                  <label>Poin-poin Materi</label>
-                  <div className={styles.topicsEditor}>
-                    {item.topics.map((t, ti) => (
-                      <div key={ti} className={styles.topicRow}>
-                        <input className={styles.topicInput} value={t}
-                          onChange={e => updateTopic(i, ti, e.target.value)} placeholder={`Poin ${ti+1}...`} />
-                        <button className={styles.deleteBtn} onClick={() => removeTopic(i, ti)}><Trash2 size={13} /></button>
-                      </div>
-                    ))}
-                    <button className={styles.addTopicBtn} onClick={() => addTopic(i)}><Plus size={12} /> Tambah Poin</button>
-                  </div>
-                </div>
-                <div className={styles.rowActions}>
-                  {saved === i && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
-                  <button className={styles.saveBtn} onClick={() => handleSave(i)} disabled={saving === i}>
-                    <Save size={14} /> {saving === i ? "Menyimpan..." : "Simpan Sesi Ini"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div className={styles.card}>
+        <div className={styles.cardTitle}><PlayCircle size={14} /> Link Materi & Video</div>
+        <div className={styles.field}>
+          <label>Link Materi (Materi Playback)</label>
+          <input className={styles.input} value={materiLink} onChange={e => setMateriLink(e.target.value)} placeholder="https://..." />
+        </div>
+        <div className={styles.field}>
+          <label>Link Youtube Playlist</label>
+          <input className={styles.input} value={playlistLink} onChange={e => setPlaylistLink(e.target.value)} placeholder="https://youtube.com/playlist?..." />
+        </div>
+      </div>
     </>
   );
 }
@@ -1127,29 +1035,15 @@ function TabSchedule() {
                 <div className={styles.formGrid}>
                   <div className={styles.field}><label>Label Sesi</label>
                     <input className={styles.input} value={item.number_label} onChange={e => update(i, "number_label", e.target.value)} /></div>
-                  <div className={styles.field}><label>Nomor Sesi</label>
-                    <input className={styles.input} type="number" value={item.session_no} onChange={e => update(i, "session_no", Number(e.target.value))} /></div>
-                </div>
-                <div className={styles.formGrid}>
-                  <div className={styles.field}><label>Sort Order</label>
-                    <input className={styles.input} type="number" value={item.sort_order} onChange={e => update(i, "sort_order", Number(e.target.value))} /></div>
                   <div className={styles.field}><label>Tanggal (YYYY-MM-DD)</label>
-                    <input className={styles.input} value={item.session_date} onChange={e => update(i, "session_date", e.target.value)} placeholder="2025-03-19" /></div>
+                    <input className={styles.input} value={item.session_date} onChange={e => update(i, "session_date", e.target.value)} placeholder="2025-06-05" /></div>
                 </div>
-                <div className={styles.field}><label>Judul Sesi</label>
+                <div className={styles.field}><label>Nama Modul</label>
                   <input className={styles.input} value={item.title} onChange={e => update(i, "title", e.target.value)} /></div>
-                <div className={styles.field}><label>Materi / Topik</label>
+                <div className={styles.field}><label>Deskripsi / Topik</label>
                   <textarea className={styles.textarea} rows={3} value={item.topic} onChange={e => update(i, "topic", e.target.value)} /></div>
-                <div className={styles.formGrid}>
-                  <div className={styles.field}><label>Alat (Tools)</label>
-                    <input className={styles.input} value={item.tools} onChange={e => update(i, "tools", e.target.value)} /></div>
-                  <div className={styles.field}><label>Mentor (PIC)</label>
-                    <input className={styles.input} value={item.pic} onChange={e => update(i, "pic", e.target.value)} /></div>
-                </div>
-                <div className={styles.field}><label>Waktu Kelas</label>
-                  <input className={styles.input} value={item.time_label} onChange={e => update(i, "time_label", e.target.value)} placeholder="19.00 - 21.30" /></div>
-                <div className={styles.field}><label>Capaian Hasil Belajar (Outcome)</label>
-                  <textarea className={styles.textarea} rows={3} value={item.outcome} onChange={e => update(i, "outcome", e.target.value)} /></div>
+                <div className={styles.field}><label>Mentor (PIC)</label>
+                  <input className={styles.input} value={item.pic} onChange={e => update(i, "pic", e.target.value)} /></div>
                 <div className={styles.rowActions}>
                   {saved === i && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
                   <button className={styles.saveBtn} onClick={() => handleSave(i)} disabled={saving === i}>
