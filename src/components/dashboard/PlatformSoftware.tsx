@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Wrench, List, Copy, Check, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import type { SoftwareRow } from "@/lib/supabase";
+import React, { useState } from "react";
+import { Wrench, List, Copy, Check, ChevronUp, ChevronDown } from "lucide-react";
 import styles from "./PlatformSoftware.module.css";
+
+interface SoftwareItem {
+  id: string;
+  name: string;
+  version: string;
+  icon: string;
+  desc: string;
+  guideSteps: string[];
+  testCommand?: string;
+  downloadUrl: string;
+}
 
 const LOGOS: Record<string, React.ReactElement> = {
   qgis: (
@@ -24,30 +33,70 @@ const LOGOS: Record<string, React.ReactElement> = {
   ),
 };
 
+const SOFTWARE_LIST: SoftwareItem[] = [
+  {
+    id: "qgis",
+    name: "QGIS Desktop",
+    version: "v3.28 LTR (atau terbaru)",
+    icon: "🗺️",
+    desc: "Aplikasi GIS desktop open-source untuk mengelola, menganalisis, mendigitasi, dan memformat data spasial vektor/raster.",
+    guideSteps: [
+      "Kunjungi situs resmi pengunduhan QGIS.",
+      "Unduh installer 'QGIS LTR (Long Term Release)' sesuai sistem operasi Anda (Windows/macOS/Linux).",
+      "Jalankan file installer dan selesaikan wizard instalasi dengan opsi default.",
+      "Buka QGIS Desktop untuk memastikan aplikasi berjalan dengan baik."
+    ],
+    testCommand: "qgis --version",
+    downloadUrl: "https://qgis.org/en/site/forusers/download.html"
+  },
+  {
+    id: "vscode",
+    name: "VS Code",
+    version: "Terbaru",
+    icon: "💻",
+    desc: "Code editor andalan developer modern untuk menulis HTML, CSS, JavaScript, MapLibre, hingga script spasial Python.",
+    guideSteps: [
+      "Unduh VS Code installer untuk sistem operasi Anda.",
+      "Lakukan instalasi dan centang opsi 'Add to PATH' (sangat penting untuk Windows).",
+      "Pasang ekstensi: Live Server (oleh Ritwick Dey) dan Live Preview (oleh Microsoft)."
+    ],
+    testCommand: "code --version",
+    downloadUrl: "https://code.visualstudio.com/"
+  },
+  {
+    id: "git",
+    name: "Git & GitHub",
+    version: "Terbaru",
+    icon: "🐙",
+    desc: "Version Control System untuk melacak perubahan kode, manajemen repositori tugas, dan deploy portfolio WebGIS.",
+    guideSteps: [
+      "Unduh Git Installer sesuai sistem operasi Anda.",
+      "Gunakan konfigurasi default saat instalasi, pastikan Git CLI aktif.",
+      "Buat akun di github.com jika belum memilikinya.",
+      "Gunakan Git Bash atau terminal pilihan Anda untuk menguji konfigurasi."
+    ],
+    testCommand: "git --version",
+    downloadUrl: "https://git-scm.com/downloads"
+  },
+  {
+    id: "geomapid",
+    name: "GEO MAPID",
+    version: "Platform Cloud Spasial",
+    icon: "🌐",
+    desc: "Platform cloud database spasial MAPID untuk digitasi data, manajemen layer GeoJSON, dan aktivasi REST API Endpoint peta.",
+    guideSteps: [
+      "Kunjungi platform GEO MAPID dan buat akun baru dengan email aktif Anda.",
+      "Setelah mendaftar, masuk ke menu Redeem Code.",
+      "Masukkan kode akses bootcamp: WGA262 untuk mengaktifkan akses penuh platform.",
+      "Eksplorasi fitur digitasi, upload GeoJSON, dan aktifkan API Endpoint data spasial Anda."
+    ],
+    downloadUrl: "https://geo.mapid.io"
+  }
+];
+
 export default function PlatformSoftware() {
-  const [softwareList, setSoftwareList] = useState<SoftwareRow[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      const { data } = await supabase
-        .from("academy_config_software")
-        .select("*")
-        .order("sort_order");
-
-      if (data) {
-        const parsed = (data as SoftwareRow[]).map((s) => ({
-          ...s,
-          guide_steps: Array.isArray(s.guide_steps) ? s.guide_steps : [],
-        }));
-        setSoftwareList(parsed);
-      }
-      setLoading(false);
-    }
-    fetchData();
-  }, []);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -56,16 +105,8 @@ export default function PlatformSoftware() {
   };
 
   const toggleOpen = (id: string) => {
-    setOpenId((prev) => (prev === id ? null : id));
+    setOpenId(prev => prev === id ? null : id);
   };
-
-  if (loading) {
-    return (
-      <div className={styles.container} style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
-        <Loader2 size={28} style={{ animation: "spin 1s linear infinite" }} />
-      </div>
-    );
-  }
 
   return (
     <div className={styles.container}>
@@ -78,21 +119,22 @@ export default function PlatformSoftware() {
       </div>
 
       <div className={styles.accordionList}>
-        {softwareList.map((software) => {
-          const isOpen = openId === software.software_key;
+        {SOFTWARE_LIST.map((software) => {
+          const isOpen = openId === software.id;
           return (
-            <div key={software.software_key} className={`${styles.accordionCard} ${isOpen ? styles.accordionOpen : ""}`}>
-              <button className={styles.accordionHeader} onClick={() => toggleOpen(software.software_key)}>
+            <div key={software.id} className={`${styles.accordionCard} ${isOpen ? styles.accordionOpen : ""}`}>
+              {/* Header Row */}
+              <button className={styles.accordionHeader} onClick={() => toggleOpen(software.id)}>
                 <div className={styles.accordionLeft}>
                   <span className={styles.softwareIcon}>
-                    {software.software_key === "geomapid" ? (
+                    {software.id === "geomapid" ? (
                       <svg viewBox="0 0 100 100" width="36" height="36">
                         <path d="M10,50 L75,5 L80,55 Z" fill="#3884c7" />
                         <path d="M10,50 L50,55 L62,85 Z" fill="#165da6" />
                         <path d="M50,55 L80,55 L86,90 L62,85 Z" fill="#94cb5a" />
                       </svg>
                     ) : (
-                      LOGOS[software.software_key] || <Wrench size={36} />
+                      LOGOS[software.id]
                     )}
                   </span>
                   <div>
@@ -101,11 +143,12 @@ export default function PlatformSoftware() {
                   </div>
                 </div>
                 <div className={styles.accordionRight}>
-                  <span className={styles.accordionDesc}>{software.description}</span>
+                  <span className={styles.accordionDesc}>{software.desc}</span>
                   <span className={styles.chevron}>{isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                 </div>
               </button>
 
+              {/* Expanded Guide */}
               {isOpen && (
                 <div className={styles.accordionBody}>
                   <div className={styles.guideBox}>
@@ -114,39 +157,50 @@ export default function PlatformSoftware() {
                       Langkah Instalasi / Setup:
                     </h4>
                     <ol className={styles.stepsList}>
-                      {software.guide_steps.map((step: string, idx: number) => (
+                      {software.guideSteps.map((step, idx) => (
                         <li key={idx}>{step}</li>
                       ))}
                     </ol>
                   </div>
 
-                  {software.redeem_code && (
+                  {software.id === "geomapid" && (
                     <div className={styles.redeemBox}>
                       <span className={styles.redeemLabel}>KODE AKSES BOOTCAMP</span>
                       <div className={styles.redeemCode}>
-                        <span className={styles.codeText}>{software.redeem_code}</span>
-                        <button onClick={() => handleCopy(software.redeem_code, software.software_key)} className={styles.copyBtn}>
-                          {copiedId === software.software_key ? <><Check size={12} /> Tersalin</> : <><Copy size={12} /> Salin</>}
+                        <span className={styles.codeText}>WGA262</span>
+                        <button
+                          onClick={() => handleCopy("WGA262", "geomapid")}
+                          className={styles.copyBtn}
+                        >
+                          {copiedId === "geomapid" ? <><Check size={12} /> Tersalin</> : <><Copy size={12} /> Salin</>}
                         </button>
                       </div>
                       <p className={styles.redeemNote}>Masukkan kode ini di menu Redeem Code setelah membuat akun GEO MAPID.</p>
                     </div>
                   )}
 
-                  {software.test_command && (
+                  {software.testCommand && (
                     <div className={styles.terminalBox}>
                       <div className={styles.terminalHeader}>
                         <span>Terminal Test Command</span>
-                        <button onClick={() => handleCopy(software.test_command, software.software_key)} className={styles.copyBtn}>
-                          {copiedId === software.software_key ? <><Check size={12} /> Tersalin</> : <><Copy size={12} /> Salin</>}
+                        <button
+                          onClick={() => handleCopy(software.testCommand!, software.id)}
+                          className={styles.copyBtn}
+                        >
+                          {copiedId === software.id ? <><Check size={12} /> Tersalin</> : <><Copy size={12} /> Salin</>}
                         </button>
                       </div>
-                      <code>{software.test_command}</code>
+                      <code>{software.testCommand}</code>
                     </div>
                   )}
 
-                  <a href={software.download_url} target="_blank" rel="noopener noreferrer" className={styles.downloadBtn}>
-                    {software.software_key === "geomapid" ? "Buka Platform GEO MAPID" : "Unduh Resminya"} <span>&#x2197;</span>
+                  <a
+                    href={software.downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.downloadBtn}
+                  >
+                    {software.id === "geomapid" ? "Buka Platform GEO MAPID" : "Unduh Resminya"} <span>↗</span>
                   </a>
                 </div>
               )}

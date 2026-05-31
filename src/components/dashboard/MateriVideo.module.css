@@ -8,17 +8,13 @@
   width: 100%;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .header h2 {
   font-size: 20px;
   font-weight: 900;
   color: var(--primary);
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   letter-spacing: -0.02em;
 }
 
@@ -28,190 +24,226 @@
   margin-top: 4px;
 }
 
-/* ── Filter Bar ───────────────────────────────────────── */
-.filterBar {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.filterBtn {
-  padding: 7px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.filterBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.activeFilter {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff !important;
-}
-
-/* ── Materi Grid ──────────────────────────────────────── */
-.materiGrid {
+/* ── 2 Cards Row ───────────────────────────────────────── */
+.cardsRow {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 22px;
 }
 
 .card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   transition: box-shadow 0.2s, transform 0.2s;
-  display: flex;
-  flex-direction: column;
 }
 
 .card:hover {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   transform: translateY(-3px);
 }
 
-/* ── Thumbnail ────────────────────────────────────────── */
-.thumbnailWrapper {
+/* ── Card Background / Thumbnail ──────────────────────── */
+.cardBg {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #1e293b;
+  padding: 32px 36px 36px;
   overflow: hidden;
-}
-
-.thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.thumbnailPlaceholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  min-height: 260px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.thumbnailPlaceholder::after {
-  content: "No Video";
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.3);
+.cardBgMaterial {
+  background: linear-gradient(135deg, #2a9d8f 0%, #5272b8 50%, #1a1a3e 100%);
 }
 
-.thumbnailOverlay {
+.cardBgPlayback {
+  background: linear-gradient(135deg, #2a9d8f 0%, #5272b8 45%, #1a1a3e 100%);
+}
+
+/* Topo map texture overlay */
+.cardBg::before {
+  content: "";
   position: absolute;
-  bottom: 10px;
-  left: 12px;
+  inset: 0;
+  background-image: repeating-radial-gradient(
+    circle at 30% 60%,
+    transparent 0px, transparent 20px,
+    rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 21px
+  );
+  pointer-events: none;
 }
 
-.categoryPill {
-  font-size: 9px;
-  font-weight: 800;
+/* ── Year Badge ────────────────────────────────────────── */
+.cardBadgeYear {
+  position: absolute;
+  top: 24px;
+  left: 28px;
+  font-size: 12px;
+  font-weight: 900;
   color: #fff;
-  padding: 4px 10px;
+  border: 2px solid rgba(255,255,255,0.6);
   border-radius: 100px;
+  padding: 3px 12px;
   letter-spacing: 0.5px;
 }
 
-/* ── Card Content ─────────────────────────────────────── */
-.cardContent {
-  padding: 18px 20px 20px;
+/* ── Top Right Tagline ─────────────────────────────────── */
+.cardTagLine {
+  position: absolute;
+  top: 22px;
+  right: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
+  align-items: flex-end;
+  gap: 0;
 }
 
-.cardMeta {
+.cardTag {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.4;
+}
+
+.cardTagBold {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.4;
+}
+
+/* ── MAPID Academy Brand ───────────────────────────────── */
+.cardBrand {
+  margin-top: 44px;
   display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 0;
+}
+
+.brandMapid {
+  font-size: 38px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.brandAcademy {
+  font-size: 52px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+
+/* ── Bootcamp Pill ─────────────────────────────────────── */
+.cardPill {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-.sessionNum {
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--accent);
-  background: rgba(139, 92, 246, 0.08);
-  padding: 3px 10px;
+  gap: 5px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 100px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  margin-top: 12px;
+  width: fit-content;
+  backdrop-filter: blur(4px);
 }
 
-.cardTitle {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1.3;
+.pillBold {
+  font-weight: 900;
+  color: #fff;
+}
+
+/* ── Card Type Label ───────────────────────────────────── */
+.cardType {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  margin-top: 6px;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Decorative elements ───────────────────────────────── */
+.cardDecorCircle {
+  position: absolute;
+  bottom: -30px;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  pointer-events: none;
+}
+
+.cardDecorDots {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  pointer-events: none;
+}
+
+/* ── Card Body ─────────────────────────────────────────── */
+.cardBody {
+  padding: 20px 24px 24px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardBody p {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.65;
   margin: 0;
 }
 
-/* ── Topics ───────────────────────────────────────────── */
-.topicsBox {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.topicTag {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.45;
-}
-
-/* ── Card Actions ─────────────────────────────────────── */
-.cardActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.actionBtn {
+/* ── Link Buttons ──────────────────────────────────────── */
+.linkBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 8px;
-  padding: 9px 16px;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 11px 22px;
   text-decoration: none;
-  transition: opacity 0.15s, background 0.15s;
-  color: var(--primary);
-  background: #f1f5f9;
-  border: 1px solid var(--border);
+  width: fit-content;
+  transition: opacity 0.15s;
 }
 
-.actionBtn:hover {
-  background: #e2e8f0;
+.linkBtn:hover { opacity: 0.88; }
+
+.linkBtnGithub {
+  background: #3f8bca;
+  color: #fff;
 }
 
-.actionBtnPrimary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-indigo) 100%);
-  color: #fff !important;
-  border: none;
+.linkBtnYoutube {
+  background: #e11d48;
+  color: #fff;
 }
 
-.actionBtnPrimary:hover {
-  opacity: 0.88;
-}
-
-/* ── Responsive ───────────────────────────────────────── */
+/* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 800px) {
-  .materiGrid { grid-template-columns: 1fr; }
+  .cardsRow { grid-template-columns: 1fr; }
   .container { padding: 18px 14px; }
+  .brandAcademy { font-size: 40px; }
+  .brandMapid { font-size: 30px; }
 }

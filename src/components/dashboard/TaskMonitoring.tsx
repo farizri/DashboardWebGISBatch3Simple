@@ -22,9 +22,9 @@ export default function TaskMonitoring() {
   useEffect(() => {
     async function load() {
       const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
-        supabase.from("academy_config_participants").select("name").order("sort_order"),
-        supabase.from("academy_config_tasks").select("task_order,number,title").order("task_order"),
-        supabase.from("academy_task_submissions").select("participant,task_id,task_number,task_title,url,submitted_at").order("submitted_at"),
+        supabase.from("config_participants").select("name").order("sort_order"),
+        supabase.from("config_tasks").select("task_order,number,title").order("task_order"),
+        supabase.from("task_submissions").select("participant,task_id,task_number,task_title,url,submitted_at").order("submitted_at"),
       ]);
       const names = (p || []).map((x: { name: string }) => x.name);
       const tasks = (t as TaskItem[]) || [];
@@ -52,7 +52,7 @@ export default function TaskMonitoring() {
       task_title: task.title,
       url: inputUrl.trim(),
     };
-    const { error } = await supabase.from("academy_task_submissions").insert(entry);
+    const { error } = await supabase.from("task_submissions").insert(entry);
     if (!error) {
       setSubmissions(prev => [...prev, entry]);
       localStorage.setItem("mapid_active_username", selectedName);
