@@ -124,11 +124,11 @@ export default function AdminEditorPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const [cfgRes, pRes, tRes, mRes, ptRes] = await Promise.all([
-      supabase.from("academy_site_config").select("key, value"),
-      supabase.from("academy_config_participants").select("*").order("sort_order"),
-      supabase.from("academy_config_tasks").select("*").order("task_order"),
-      supabase.from("academy_config_materi").select("*").order("session_no"),
-      supabase.from("academy_post_test_config").select("id, total_sessions").limit(1).single(),
+      supabase.from("site_config").select("key, value"),
+      supabase.from("config_participants").select("*").order("sort_order"),
+      supabase.from("config_tasks").select("*").order("task_order"),
+      supabase.from("config_materi").select("*").order("session_no"),
+      supabase.from("post_test_config").select("id, total_sessions").limit(1).single(),
     ]);
 
     const cfgMap: ConfigMap = {};
@@ -164,7 +164,7 @@ export default function AdminEditorPage() {
     setSavingConfig(true);
     await Promise.all(
       keys.map((key) =>
-        supabase.from("academy_site_config").upsert({ key, value: cfg(key), updated_at: new Date().toISOString() })
+        supabase.from("site_config").upsert({ key, value: cfg(key), updated_at: new Date().toISOString() })
       )
     );
     setSavingConfig(false);
@@ -194,9 +194,9 @@ export default function AdminEditorPage() {
     setSavingP(true);
     const valid = participants.filter((p) => p.name.trim());
     // Delete all and re-insert for simplicity
-    await supabase.from("academy_config_participants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("config_participants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     if (valid.length > 0) {
-      await supabase.from("academy_config_participants").insert(
+      await supabase.from("config_participants").insert(
         valid.map((p, i) => ({ name: p.name.trim(), email: p.email, sort_order: i + 1 }))
       );
     }
@@ -228,9 +228,9 @@ export default function AdminEditorPage() {
   const saveTasks = async () => {
     setSavingT(true);
     const valid = tasks.filter((t) => t.title.trim());
-    await supabase.from("academy_config_tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("config_tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     if (valid.length > 0) {
-      await supabase.from("academy_config_tasks").insert(
+      await supabase.from("config_tasks").insert(
         valid.map((t, i) => ({
           task_order: i + 1,
           number: t.number,
@@ -307,9 +307,9 @@ export default function AdminEditorPage() {
       topics: m.topics.filter((t) => t.trim()),
     };
     if (m.id.startsWith("new-")) {
-      await supabase.from("academy_config_materi").insert(payload);
+      await supabase.from("config_materi").insert(payload);
     } else {
-      await supabase.from("academy_config_materi").update(payload).eq("id", m.id);
+      await supabase.from("config_materi").update(payload).eq("id", m.id);
     }
     setSavingM(null);
     setSavedM(m.id);
@@ -321,7 +321,7 @@ export default function AdminEditorPage() {
 
   const savePT = async () => {
     setSavingPT(true);
-    await supabase.from("academy_post_test_config").update({ total_sessions: totalPT, updated_at: new Date().toISOString() }).eq("id", ptConfigId);
+    await supabase.from("post_test_config").update({ total_sessions: totalPT, updated_at: new Date().toISOString() }).eq("id", ptConfigId);
     setSavingPT(false);
     setSavedPT(true);
     setTimeout(() => setSavedPT(false), 2500);

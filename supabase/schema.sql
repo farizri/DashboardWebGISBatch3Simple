@@ -1,12 +1,13 @@
 -- ============================================================
--- MAPID Academy WebGIS Batch 3 — Full Supabase Schema
--- Satu file, satu query. Run di: Supabase Dashboard > SQL Editor
+-- MAPID Academy WebGIS Batch 3 — Supabase Schema
+-- Run di: Supabase Dashboard > SQL Editor
 -- ============================================================
 
 -- ═══════════════════════════════════════════════════════════════
 -- 1. ATTENDANCE — per peserta per sesi
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_attendance (
+DROP TABLE IF EXISTS attendance CASCADE;
+CREATE TABLE attendance (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   participant  text NOT NULL,
   session_no   integer NOT NULL CHECK (session_no BETWEEN 1 AND 17),
@@ -14,13 +15,15 @@ CREATE TABLE IF NOT EXISTS academy_attendance (
   created_at   timestamptz DEFAULT now(),
   UNIQUE (participant, session_no)
 );
-ALTER TABLE academy_attendance ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read attendance"   ON academy_attendance FOR SELECT USING (true);
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read attendance" ON attendance FOR SELECT USING (true);
+CREATE POLICY "anon write attendance"  ON attendance FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. TASK SUBMISSIONS — link tugas dari peserta
+-- 2. TASK SUBMISSIONS — link tugas peserta
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_task_submissions (
+DROP TABLE IF EXISTS task_submissions CASCADE;
+CREATE TABLE task_submissions (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   participant  text NOT NULL,
   task_id      integer NOT NULL,
@@ -29,14 +32,15 @@ CREATE TABLE IF NOT EXISTS academy_task_submissions (
   url          text NOT NULL,
   submitted_at timestamptz DEFAULT now()
 );
-ALTER TABLE academy_task_submissions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read submissions"        ON academy_task_submissions FOR SELECT USING (true);
-CREATE POLICY "anon insert submissions"        ON academy_task_submissions FOR INSERT WITH CHECK (true);
+ALTER TABLE task_submissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read task_submissions" ON task_submissions FOR SELECT USING (true);
+CREATE POLICY "anon write task_submissions"  ON task_submissions FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. QUIZ SCORES — hasil post test per peserta per sesi
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_quiz_scores (
+DROP TABLE IF EXISTS quiz_scores CASCADE;
+CREATE TABLE quiz_scores (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   participant   text NOT NULL,
   email         text,
@@ -46,51 +50,53 @@ CREATE TABLE IF NOT EXISTS academy_quiz_scores (
   completed_at  timestamptz DEFAULT now(),
   UNIQUE (participant, session_key, attempt_no)
 );
-ALTER TABLE academy_quiz_scores ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read quiz_scores"        ON academy_quiz_scores FOR SELECT USING (true);
-CREATE POLICY "anon insert quiz_scores"        ON academy_quiz_scores FOR INSERT WITH CHECK (true);
+ALTER TABLE quiz_scores ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read quiz_scores" ON quiz_scores FOR SELECT USING (true);
+CREATE POLICY "anon write quiz_scores"  ON quiz_scores FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 4. FINAL PROJECTS — pengumpulan final project
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_final_projects (
+DROP TABLE IF EXISTS final_projects CASCADE;
+CREATE TABLE final_projects (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   participant  text UNIQUE NOT NULL,
   url          text NOT NULL,
   submitted_at timestamptz DEFAULT now(),
   updated_at   timestamptz DEFAULT now()
 );
-ALTER TABLE academy_final_projects ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read final_projects"     ON academy_final_projects FOR SELECT USING (true);
-CREATE POLICY "anon upsert final_projects"     ON academy_final_projects FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE final_projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read final_projects" ON final_projects FOR SELECT USING (true);
+CREATE POLICY "anon write final_projects"  ON final_projects FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. POST TEST CONFIG — singleton, admin atur jumlah sesi aktif
+-- 5. POST TEST CONFIG — admin konfigurasi jumlah sesi quiz
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_post_test_config (
+DROP TABLE IF EXISTS post_test_config CASCADE;
+CREATE TABLE post_test_config (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   total_sessions integer NOT NULL DEFAULT 1 CHECK (total_sessions BETWEEN 1 AND 15),
   updated_at     timestamptz DEFAULT now()
 );
-INSERT INTO academy_post_test_config (total_sessions) VALUES (1) ON CONFLICT DO NOTHING;
-ALTER TABLE academy_post_test_config ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read post_test_config"   ON academy_post_test_config FOR SELECT USING (true);
-CREATE POLICY "anon update post_test_config"   ON academy_post_test_config FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "anon insert post_test_config"   ON academy_post_test_config FOR INSERT WITH CHECK (true);
+INSERT INTO post_test_config (total_sessions) VALUES (1);
+ALTER TABLE post_test_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read post_test_config" ON post_test_config FOR SELECT USING (true);
+CREATE POLICY "anon write post_test_config"  ON post_test_config FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. SITE CONFIG — key-value untuk tata tertib, kontak, link, dll
+-- 6. SITE CONFIG — key-value untuk tata tertib, kontak, link
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_site_config (
+DROP TABLE IF EXISTS site_config CASCADE;
+CREATE TABLE site_config (
   key        text PRIMARY KEY,
   value      text NOT NULL DEFAULT '',
   updated_at timestamptz DEFAULT now()
 );
-ALTER TABLE academy_site_config ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read site_config"    ON academy_site_config FOR SELECT USING (true);
-CREATE POLICY "anon write site_config"     ON academy_site_config FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read site_config" ON site_config FOR SELECT USING (true);
+CREATE POLICY "anon write site_config"  ON site_config FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_site_config (key, value) VALUES
+INSERT INTO site_config (key, value) VALUES
   ('attendance_link',          'https://forms.gle/mapid-academy-attendance'),
   ('discord_link',             'https://discord.gg/mapid'),
   ('zoom_link',                'https://zoom.us/j/88219283192?pwd=mapidacademy'),
@@ -115,23 +121,23 @@ INSERT INTO academy_site_config (key, value) VALUES
   ('total_participants',       '10'),
   ('redeem_code',              'WGA262'),
   ('youtube_playlist_url',     'https://www.youtube.com/@mapid_official'),
-  ('quiz_sessions_map',        '{"1":"Sesi 1 & 2: Onboarding & Get to Know WebGIS","2":"Sesi 3: GIS Fundamental","3":"Sesi 4: Location Value with GEO MAPID","4":"Sesi 5: Introduction to VS Code, Git, HTML, CSS, and JS","5":"Sesi 6: HTML and CSS Part 2","6":"Sesi 7: JavaScript Part 1","7":"Sesi 8: JavaScript Part 2","8":"Sesi 9: Introduction JavaScript Modern","9":"Sesi 10: WebMap & MapLibre Part 1","10":"Sesi 11: WebMap & MapLibre Part 2","11":"Sesi 12: WebMap & MapLibre Part 3","12":"Sesi 13: Feature Implementation Part 1","13":"Sesi 14: Feature Implementation Part 2","14":"Sesi 15: WebGIS Code Refinement and Deployment","15":"Bonus: Python Spatial Data"}')
-ON CONFLICT (key) DO NOTHING;
+  ('quiz_sessions_map',        '{"1":"Sesi 1 & 2: Onboarding & Get to Know WebGIS","2":"Sesi 3: GIS Fundamental","3":"Sesi 4: Location Value with GEO MAPID","4":"Sesi 5: Introduction to VS Code, Git, HTML, CSS, and JS","5":"Sesi 6: HTML and CSS Part 2","6":"Sesi 7: JavaScript Part 1","7":"Sesi 8: JavaScript Part 2","8":"Sesi 9: Introduction JavaScript Modern","9":"Sesi 10: WebMap & MapLibre Part 1","10":"Sesi 11: WebMap & MapLibre Part 2","11":"Sesi 12: WebMap & MapLibre Part 3","12":"Sesi 13: Feature Implementation Part 1","13":"Sesi 14: Feature Implementation Part 2","14":"Sesi 15: WebGIS Code Refinement and Deployment","15":"Bonus: Python Spatial Data"}');
 
 -- ═══════════════════════════════════════════════════════════════
 -- 7. CONFIG PARTICIPANTS — daftar peserta
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_participants (
+DROP TABLE IF EXISTS config_participants CASCADE;
+CREATE TABLE config_participants (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name       text UNIQUE NOT NULL,
   email      text DEFAULT '',
   sort_order integer DEFAULT 0
 );
-ALTER TABLE academy_config_participants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read participants"    ON academy_config_participants FOR SELECT USING (true);
-CREATE POLICY "anon write participants"     ON academy_config_participants FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_participants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_participants" ON config_participants FOR SELECT USING (true);
+CREATE POLICY "anon write config_participants"  ON config_participants FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_participants (name, email, sort_order) VALUES
+INSERT INTO config_participants (name, email, sort_order) VALUES
   ('Kalvin Reza Pratama',    'kalvin@gmail.com',    1),
   ('Rafi Fistra Ali',        'rafi@gmail.com',      2),
   ('Binar Aulia Setyawan',   'binar@gmail.com',     3),
@@ -141,38 +147,38 @@ INSERT INTO academy_config_participants (name, email, sort_order) VALUES
   ('Rinjani Putri Djunaedi', 'rinjani@gmail.com',   7),
   ('Rizki Amara Putri',      'rizki@gmail.com',     8),
   ('Muhammad Thariq Aziz',   'thariq@gmail.com',    9),
-  ('Adinda Dwi Yulianto',    'adinda@gmail.com',    10)
-ON CONFLICT (name) DO NOTHING;
+  ('Adinda Dwi Yulianto',    'adinda@gmail.com',    10);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 8. CONFIG TASKS — definisi tugas per fase
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_tasks (
+DROP TABLE IF EXISTS config_tasks CASCADE;
+CREATE TABLE config_tasks (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   task_order integer UNIQUE NOT NULL,
   number     text NOT NULL,
   title      text NOT NULL,
   phase      text DEFAULT ''
 );
-ALTER TABLE academy_config_tasks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read tasks"           ON academy_config_tasks FOR SELECT USING (true);
-CREATE POLICY "anon write tasks"            ON academy_config_tasks FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_tasks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_tasks" ON config_tasks FOR SELECT USING (true);
+CREATE POLICY "anon write config_tasks"  ON config_tasks FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_tasks (task_order, number, title, phase) VALUES
-  (1, 'Tugas 1-2',   'Spatial Preparation — Format GIS & Problem Solving',              'GIS & Location Value'),
-  (2, 'Tugas 3',     'Project Definition — Ide WebGIS & Data Spasial Awal',             'GIS & Location Value'),
-  (3, 'Tugas 4',     'Web Structure & Dashboard UI — HTML & CSS',                       'HTML & CSS'),
-  (4, 'Tugas 5',     'Web Interaction & Dynamic Content — JavaScript',                  'JavaScript'),
-  (5, 'Tugas 6',     'WebMap Integration — Layer, Data Spasial & Popup',                'WebMap Fundamentals'),
-  (6, 'Tugas 7',     'Spatial Feature Implementation — Heatmap/Radius/Isochrone',       'Feature Development'),
-  (7, 'Tugas 8',     'Final WebGIS Project — Refinement & Deployment (Cursor AI)',      'Refinement & Deployment'),
-  (8, 'Bonus Task',  'Python for Spatial Data — Preprocessing & Spatial Analysis',      'Bonus Session')
-ON CONFLICT (task_order) DO NOTHING;
+INSERT INTO config_tasks (task_order, number, title, phase) VALUES
+  (1, 'Tugas 1-2',  'Spatial Preparation — Format GIS & Problem Solving',        'GIS & Location Value'),
+  (2, 'Tugas 3',    'Project Definition — Ide WebGIS & Data Spasial Awal',       'GIS & Location Value'),
+  (3, 'Tugas 4',    'Web Structure & Dashboard UI — HTML & CSS',                 'HTML & CSS'),
+  (4, 'Tugas 5',    'Web Interaction & Dynamic Content — JavaScript',            'JavaScript'),
+  (5, 'Tugas 6',    'WebMap Integration — Layer, Data Spasial & Popup',           'WebMap Fundamentals'),
+  (6, 'Tugas 7',    'Spatial Feature Implementation — Heatmap/Radius/Isochrone', 'Feature Development'),
+  (7, 'Tugas 8',    'Final WebGIS Project — Refinement & Deployment (Cursor AI)','Refinement & Deployment'),
+  (8, 'Bonus Task', 'Python for Spatial Data — Preprocessing & Spatial Analysis','Bonus Session');
 
 -- ═══════════════════════════════════════════════════════════════
 -- 9. CONFIG SESSIONS — jadwal 17 sesi bootcamp
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_sessions (
+DROP TABLE IF EXISTS config_sessions CASCADE;
+CREATE TABLE config_sessions (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_no    integer UNIQUE NOT NULL CHECK (session_no BETWEEN 1 AND 17),
   number_label  text NOT NULL,
@@ -185,11 +191,11 @@ CREATE TABLE IF NOT EXISTS academy_config_sessions (
   session_date  text NOT NULL DEFAULT '',
   sort_order    integer NOT NULL DEFAULT 0
 );
-ALTER TABLE academy_config_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read sessions"        ON academy_config_sessions FOR SELECT USING (true);
-CREATE POLICY "anon write sessions"         ON academy_config_sessions FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_sessions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_sessions" ON config_sessions FOR SELECT USING (true);
+CREATE POLICY "anon write config_sessions"  ON config_sessions FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_sessions (session_no, number_label, title, topic, tools, pic, outcome, time_label, session_date, sort_order) VALUES
+INSERT INTO config_sessions (session_no, number_label, title, topic, tools, pic, outcome, time_label, session_date, sort_order) VALUES
 (1,  'Sesi 1',  'Onboarding Program',
      'Ruang pengenalan awal program: platform komunikasi, tata cara pengumpulan tugas, dan ketentuan sertifikat kelulusan.',
      'Konseptual', 'MC',
@@ -274,13 +280,13 @@ INSERT INTO academy_config_sessions (session_no, number_label, title, topic, too
      'Explorasi spatial analysis menggunakan library Python dan data GEO MAPID.',
      'VS Code + GEO MAPID', 'Raden Pranantya',
      'Peserta memahami potensi automation dan preprocessing data spasial menggunakan Python.',
-     '08.30 - 11.30', '2025-05-03', 17)
-ON CONFLICT (session_no) DO NOTHING;
+     '08.30 - 11.30', '2025-05-03', 17);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 10. CONFIG MATERI — materi & video rekaman per sesi
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_materi (
+DROP TABLE IF EXISTS config_materi CASCADE;
+CREATE TABLE config_materi (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_no   integer UNIQUE NOT NULL,
   number_label text NOT NULL,
@@ -291,11 +297,11 @@ CREATE TABLE IF NOT EXISTS academy_config_materi (
   youtube_id   text DEFAULT '',
   topics       jsonb DEFAULT '[]'
 );
-ALTER TABLE academy_config_materi ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read materi"          ON academy_config_materi FOR SELECT USING (true);
-CREATE POLICY "anon write materi"           ON academy_config_materi FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_materi ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_materi" ON config_materi FOR SELECT USING (true);
+CREATE POLICY "anon write config_materi"  ON config_materi FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_materi (session_no, number_label, title, category, materi_url, playlist_url, youtube_id, topics) VALUES
+INSERT INTO config_materi (session_no, number_label, title, category, materi_url, playlist_url, youtube_id, topics) VALUES
 (1,  'Sesi 1',  'Onboarding Program',             'Concept',
      'https://github.com/mapid-academy/webgis-bootcamp-batch3',
      'https://www.youtube.com/@mapid_official', 'dQw4w9WgXcQ',
@@ -363,17 +369,13 @@ INSERT INTO academy_config_materi (session_no, number_label, title, category, ma
 (17, 'Sesi 17 (Bonus 2)', 'Spatial Analysis & Automation', 'Python',
      'https://github.com/mapid-academy/webgis-bootcamp-batch3/tree/main/bonus-2',
      'https://www.youtube.com/@mapid_official', 'dQw4w9WgXcQ',
-     '["Spatial analysis library Python", "Script ETL & automation preprocessing", "Integrasi output Python ke GEO MAPID"]')
-ON CONFLICT (session_no) DO UPDATE SET
-  number_label = EXCLUDED.number_label, title = EXCLUDED.title,
-  category = EXCLUDED.category, materi_url = EXCLUDED.materi_url,
-  playlist_url = EXCLUDED.playlist_url, youtube_id = EXCLUDED.youtube_id,
-  topics = EXCLUDED.topics;
+     '["Spatial analysis library Python", "Script ETL & automation preprocessing", "Integrasi output Python ke GEO MAPID"]');
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. QUIZ QUESTIONS — soal post test per sesi (admin editable)
+-- 11. QUIZ QUESTIONS — soal post test per sesi
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_quiz_questions (
+DROP TABLE IF EXISTS quiz_questions CASCADE;
+CREATE TABLE quiz_questions (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_key    integer NOT NULL CHECK (session_key BETWEEN 1 AND 15),
   sort_order     integer NOT NULL DEFAULT 0,
@@ -382,11 +384,11 @@ CREATE TABLE IF NOT EXISTS academy_quiz_questions (
   correct_answer integer NOT NULL DEFAULT 0 CHECK (correct_answer BETWEEN 0 AND 3),
   image_url      text DEFAULT ''
 );
-ALTER TABLE academy_quiz_questions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read quiz_questions"     ON academy_quiz_questions FOR SELECT USING (true);
-CREATE POLICY "anon write quiz_questions"      ON academy_quiz_questions FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read quiz_questions" ON quiz_questions FOR SELECT USING (true);
+CREATE POLICY "anon write quiz_questions"  ON quiz_questions FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_quiz_questions (session_key, sort_order, question_text, options, correct_answer, image_url) VALUES
+INSERT INTO quiz_questions (session_key, sort_order, question_text, options, correct_answer, image_url) VALUES
 (1, 1, 'Apa fungsi utama GeoJSON dalam pengembangan WebGIS?',
  '["Menyimpan data spasial berbasis JSON", "Membuat tampilan UI website", "Menghubungkan database SQL", "Mengatur hosting deployment"]', 0, ''),
 (1, 2, 'Sistem koordinat mana yang paling umum digunakan dalam peta web (Google Maps, MapLibre)?',
@@ -406,13 +408,13 @@ INSERT INTO academy_quiz_questions (session_key, sort_order, question_text, opti
 (1, 9, 'Format file spasial native QGIS yang mendukung banyak tipe geometri dalam satu file?',
  '["Shapefile (.shp)", "GeoPackage (.gpkg)", "GeoJSON (.geojson)", "KML (.kml)"]', 1, ''),
 (1, 10, 'Dalam arsitektur WebGIS, REST API Endpoint GEO MAPID berfungsi sebagai...',
- '["Framework JavaScript merender peta", "Antarmuka akses data spasial dari cloud database", "Tool deployment project ke Netlify", "Plugin QGIS untuk digitasi data"]', 1, '')
-ON CONFLICT DO NOTHING;
+ '["Framework JavaScript merender peta", "Antarmuka akses data spasial dari cloud database", "Tool deployment project ke Netlify", "Plugin QGIS untuk digitasi data"]', 1, '');
 
 -- ═══════════════════════════════════════════════════════════════
 -- 12. CONFIG SOFTWARE — daftar software & panduan instalasi
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_software (
+DROP TABLE IF EXISTS config_software CASCADE;
+CREATE TABLE config_software (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   software_key  text UNIQUE NOT NULL,
   name          text NOT NULL,
@@ -424,11 +426,11 @@ CREATE TABLE IF NOT EXISTS academy_config_software (
   redeem_code   text DEFAULT '',
   sort_order    integer NOT NULL DEFAULT 0
 );
-ALTER TABLE academy_config_software ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read software"         ON academy_config_software FOR SELECT USING (true);
-CREATE POLICY "anon write software"          ON academy_config_software FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_software ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_software" ON config_software FOR SELECT USING (true);
+CREATE POLICY "anon write config_software"  ON config_software FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_software (software_key, name, version, description, guide_steps, test_command, download_url, redeem_code, sort_order) VALUES
+INSERT INTO config_software (software_key, name, version, description, guide_steps, test_command, download_url, redeem_code, sort_order) VALUES
 ('qgis', 'QGIS Desktop', 'v3.28 LTR (atau terbaru)',
  'Aplikasi GIS desktop open-source untuk mengelola, menganalisis, mendigitasi, dan memformat data spasial vektor/raster.',
  '["Kunjungi situs resmi pengunduhan QGIS.", "Unduh installer QGIS LTR (Long Term Release) sesuai OS Anda.", "Jalankan installer dan selesaikan wizard instalasi dengan opsi default.", "Buka QGIS Desktop untuk memastikan aplikasi berjalan dengan baik."]',
@@ -444,22 +446,22 @@ INSERT INTO academy_config_software (software_key, name, version, description, g
 ('geomapid', 'GEO MAPID', 'Platform Cloud Spasial',
  'Platform cloud database spasial MAPID untuk digitasi data, manajemen layer GeoJSON, dan aktivasi REST API Endpoint peta.',
  '["Kunjungi platform GEO MAPID dan buat akun baru dengan email aktif Anda.", "Setelah mendaftar, masuk ke menu Redeem Code.", "Masukkan kode akses bootcamp untuk mengaktifkan akses penuh platform.", "Eksplorasi fitur digitasi, upload GeoJSON, dan aktifkan API Endpoint data spasial Anda."]',
- '', 'https://geo.mapid.io', 'WGA262', 4)
-ON CONFLICT (software_key) DO NOTHING;
+ '', 'https://geo.mapid.io', 'WGA262', 4);
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. CONFIG FINAL PROJECT — requirement & kriteria penilaian
+-- 13. CONFIG FINAL PROJECT — kriteria penilaian
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_final_project (
+DROP TABLE IF EXISTS config_final_project CASCADE;
+CREATE TABLE config_final_project (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   section_key  text UNIQUE NOT NULL,
   content      jsonb NOT NULL DEFAULT '{}'
 );
-ALTER TABLE academy_config_final_project ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read final_project_cfg" ON academy_config_final_project FOR SELECT USING (true);
-CREATE POLICY "anon write final_project_cfg"  ON academy_config_final_project FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_final_project ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_final_project" ON config_final_project FOR SELECT USING (true);
+CREATE POLICY "anon write config_final_project"  ON config_final_project FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_final_project (section_key, content) VALUES
+INSERT INTO config_final_project (section_key, content) VALUES
 ('requirements', '{
   "title": "Output Minimum WebGIS",
   "description": "Setiap proyek akhir peserta wajib memenuhi kriteria minimum berikut untuk dinyatakan lulus:",
@@ -479,34 +481,33 @@ INSERT INTO academy_config_final_project (section_key, content) VALUES
     {"title": "UI/UX & Visual Clarity", "desc": "Kerapian layout, harmoni warna peta, kenyamanan popup, dan keterbacaan data spasial."},
     {"title": "Coding Logic & Reasoning", "desc": "Struktur kode yang bersih (clean code) dan pemahaman reasoning di balik fitur."}
   ]
-}')
-ON CONFLICT (section_key) DO NOTHING;
+}');
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. CONFIG LINKS — link pendukung (sebelumnya hardcoded)
+-- 14. CONFIG LINKS — link pendukung
 -- ═══════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS academy_config_links (
+DROP TABLE IF EXISTS config_links CASCADE;
+CREATE TABLE config_links (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title      text NOT NULL,
   url        text NOT NULL,
   sort_order integer NOT NULL DEFAULT 0
 );
-ALTER TABLE academy_config_links ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public read links"           ON academy_config_links FOR SELECT USING (true);
-CREATE POLICY "anon write links"            ON academy_config_links FOR ALL    USING (true) WITH CHECK (true);
+ALTER TABLE config_links ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_links" ON config_links FOR SELECT USING (true);
+CREATE POLICY "anon write config_links"  ON config_links FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO academy_config_links (title, url, sort_order) VALUES
+INSERT INTO config_links (title, url, sort_order) VALUES
   ('Link Discord', 'https://discord.gg/ExtsnzAm', 1),
   ('Virtual Background MAPID Academy', 'https://drive.google.com/file/d/1MLTl6-V9O1daqE4tIHKzQwN7vS93i84b/view?usp=sharing', 2),
   ('Guideline for Final Project', 'https://www.canva.com/design/DAG1G1pqIW4/yQHiCzJJDDgG1SljerKq2A/view', 3),
   ('Referensi Final Project', 'https://docs.google.com/spreadsheets/d/1zmQY6Ea_Od8TYLFqBqnjLihSCljufE3WVXiYbEaeHe8/edit', 4),
-  ('Template Dokumentasi Final Project', 'https://docs.google.com/document/d/1qWdFr_LlQK3MgXb8TTLARQwsBa6MLNwD/edit', 5)
-ON CONFLICT DO NOTHING;
+  ('Template Dokumentasi Final Project', 'https://docs.google.com/document/d/1qWdFr_LlQK3MgXb8TTLARQwsBa6MLNwD/edit', 5);
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. SEED: ATTENDANCE — sesi 1-5 completed
+-- 15. SEED: ATTENDANCE — sesi 1-5
 -- ═══════════════════════════════════════════════════════════════
-INSERT INTO academy_attendance (participant, session_no, attended) VALUES
+INSERT INTO attendance (participant, session_no, attended) VALUES
   ('Kalvin Reza Pratama',   1, true),  ('Kalvin Reza Pratama',   2, true),  ('Kalvin Reza Pratama',   3, true),  ('Kalvin Reza Pratama',   4, true),  ('Kalvin Reza Pratama',   5, true),
   ('Rafi Fistra Ali',       1, true),  ('Rafi Fistra Ali',       2, true),  ('Rafi Fistra Ali',       3, true),  ('Rafi Fistra Ali',       4, true),  ('Rafi Fistra Ali',       5, true),
   ('Binar Aulia Setyawan',  1, true),  ('Binar Aulia Setyawan',  2, true),  ('Binar Aulia Setyawan',  3, true),  ('Binar Aulia Setyawan',  4, true),  ('Binar Aulia Setyawan',  5, false),
@@ -520,5 +521,5 @@ INSERT INTO academy_attendance (participant, session_no, attended) VALUES
 ON CONFLICT (participant, session_no) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
--- DONE. Semua tabel, RLS, policies, dan seed data sudah siap.
+-- DONE. 14 tabel, RLS, policies, seed data lengkap.
 -- ═══════════════════════════════════════════════════════════════
