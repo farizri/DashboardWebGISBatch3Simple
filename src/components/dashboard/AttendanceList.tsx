@@ -39,6 +39,7 @@ export default function AttendanceList() {
 
   // Form state
   const [selectedName, setSelectedName]   = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("Batch 3");
   const [checkInTime, setCheckInTime]     = useState(getCurrentTimeStr());
   const [submitting, setSubmitting]       = useState(false);
   const [submitResult, setSubmitResult]   = useState<"success" | "already" | "error" | null>(null);
@@ -148,36 +149,38 @@ export default function AttendanceList() {
 
               {/* Name dropdown */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
-                  Nama Peserta
-                </label>
-                <select
-                  value={selectedName}
-                  onChange={e => setSelectedName(e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px",
-                    border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b",
-                    background: "#fff", outline: "none" }}
-                >
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Nama Peserta</label>
+                <select value={selectedName} onChange={e => setSelectedName(e.target.value)} required
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px", border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b", background: "#fff", outline: "none" }}>
                   {participants.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
+              </div>
+
+              {/* Batch dropdown */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Batch yang Diikuti</label>
+                <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)} required
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px", border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b", background: "#fff", outline: "none" }}>
+                  <option value="Batch 2">Batch 2</option>
+                  <option value="Batch 3">Batch 3</option>
+                </select>
+              </div>
+
+              {/* Sesi kehadiran (read-only, auto-detected) */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Sesi Kehadiran</label>
+                <input value={`${todaySession.number_label} — ${todaySession.title}`} readOnly
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px", border: "1px solid #e2e8f0", fontSize: 13, color: "#64748b", background: "#f8fafc", outline: "none" }} />
               </div>
 
               {/* Time input */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
                   <Clock size={12} style={{ display: "inline", marginRight: 4 }} />
-                  Jam Hadir
+                  Waktu Absensi
                 </label>
-                <input
-                  type="time"
-                  value={checkInTime.replace(".", ":")}
-                  onChange={e => setCheckInTime(e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px",
-                    border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b",
-                    background: "#fff", outline: "none" }}
-                />
+                <input type="time" value={checkInTime.replace(".", ":")} onChange={e => setCheckInTime(e.target.value)} required
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: "7px", border: "1px solid #d1d5db", fontSize: 13, color: "#1e293b", background: "#fff", outline: "none" }} />
               </div>
 
               {/* Submit feedback */}
