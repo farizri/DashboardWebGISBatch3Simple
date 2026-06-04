@@ -46,6 +46,11 @@ export default function FinalProjectComing() {
   const projectMap: Record<string, FinalProject> = {};
   projects.forEach(fp => { projectMap[fp.participant] = fp; });
 
+  const PAGE_SIZE = 15;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(participants.length / PAGE_SIZE);
+  const pagedParticipants = participants.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -107,11 +112,12 @@ export default function FinalProjectComing() {
               </tr>
             </thead>
             <tbody>
-              {participants.map((name, i) => {
+              {pagedParticipants.map((name, i) => {
                 const fp = projectMap[name];
+                const globalIdx = page * PAGE_SIZE + i + 1;
                 return (
                   <tr key={name}>
-                    <td className={styles.tdNum}>{i + 1}</td>
+                    <td className={styles.tdNum}>{globalIdx}</td>
                     <td className={styles.tdName}>{name}</td>
                     <td>
                       {fp
@@ -132,6 +138,19 @@ export default function FinalProjectComing() {
               })}
             </tbody>
           </table>
+        )}
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "16px 0 4px" }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === 0 ? "#f8fafc" : "#fff", color: page === 0 ? "#cbd5e1" : "#334155", cursor: page === 0 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{page + 1} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === totalPages - 1 ? "#f8fafc" : "#fff", color: page === totalPages - 1 ? "#cbd5e1" : "#334155", cursor: page === totalPages - 1 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              Next →
+            </button>
+          </div>
         )}
       </div>
     </div>
