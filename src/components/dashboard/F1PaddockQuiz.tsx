@@ -10,31 +10,6 @@ import {
 } from "lucide-react";
 import styles from "./F1PaddockQuiz.module.css";
 
-const PARTICIPANTS = [
-  "Kalvin Reza Pratama",
-  "Rafi Fistra Ali",
-  "Binar Aulia Setyawan",
-  "Athirah Hamzah",
-  "Azya Naurah Sumakhalda",
-  "Robertho Kadji",
-  "Rinjani Putri Djunaedi",
-  "Rizki Amara Putri",
-  "Muhammad Thariq Aziz",
-  "Adinda Dwi Yulianto"
-];
-
-const PARTICIPANT_EMAILS: Record<string, string> = {
-  "Kalvin Reza Pratama": "kalvin@gmail.com",
-  "Rafi Fistra Ali": "rafi@gmail.com",
-  "Binar Aulia Setyawan": "binar@gmail.com",
-  "Athirah Hamzah": "athirah@gmail.com",
-  "Azya Naurah Sumakhalda": "azya@gmail.com",
-  "Robertho Kadji": "robertho@gmail.com",
-  "Rinjani Putri Djunaedi": "rinjani@gmail.com",
-  "Rizki Amara Putri": "rizki@gmail.com",
-  "Muhammad Thariq Aziz": "thariq@gmail.com",
-  "Adinda Dwi Yulianto": "adinda@gmail.com"
-};
 
 const QUIZ_SESSIONS_MAP = [
   "Sesi 1 & 2: Onboarding & Get to Know WebGIS",
@@ -55,8 +30,9 @@ const QUIZ_SESSIONS_MAP = [
 ];
 
 export default function F1PaddockQuiz() {
+  const [participants, setParticipants] = useState<{ name: string; email: string }[]>([]);
   const [selectedSession, setSelectedSession] = useState<number>(1);
-  const [selectedUser, setSelectedUser]       = useState<string>("Kalvin Reza Pratama");
+  const [selectedUser, setSelectedUser]       = useState<string>("");
   const [quizState, setQuizState]             = useState<"LOBBY" | "PLAYING" | "RESULT">("LOBBY");
 
   const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
@@ -67,24 +43,26 @@ export default function F1PaddockQuiz() {
   const [score, setScore]               = useState<number>(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    supabase.from("config_participants").select("name,email").order("sort_order").then(({ data }) => {
+      const list = (data || []) as { name: string; email: string }[];
+      setParticipants(list);
       const savedName = localStorage.getItem("mapid_active_username");
-      if (savedName && PARTICIPANTS.includes(savedName)) {
-        setSelectedUser(savedName);
-      } else {
-        localStorage.setItem("mapid_active_username", "Kalvin Reza Pratama");
-        localStorage.setItem("mapid_active_useremail", "kalvin@gmail.com");
-        setSelectedUser("Kalvin Reza Pratama");
+      const found = list.find(p => p.name === savedName);
+      if (found) {
+        setSelectedUser(found.name);
+      } else if (list.length > 0) {
+        setSelectedUser(list[0].name);
+        localStorage.setItem("mapid_active_username", list[0].name);
+        localStorage.setItem("mapid_active_useremail", list[0].email || "");
       }
-    }, 0);
-    return () => clearTimeout(timer);
+    });
   }, []);
 
   const handleUserChange = (name: string) => {
     setSelectedUser(name);
     localStorage.setItem("mapid_active_username", name);
-    const email = PARTICIPANT_EMAILS[name] || "peserta@mapid.co.id";
-    localStorage.setItem("mapid_active_useremail", email);
+    const found = participants.find(p => p.name === name);
+    localStorage.setItem("mapid_active_useremail", found?.email || "peserta@mapid.co.id");
     window.dispatchEvent(new Event("storage"));
   };
 
@@ -236,8 +214,8 @@ export default function F1PaddockQuiz() {
                 onChange={(e) => handleUserChange(e.target.value)}
                 className={styles.sessionSelect}
               >
-                {PARTICIPANTS.map((user) => (
-                  <option key={user} value={user}>{user}</option>
+                {participants.map((user) => (
+                  <option key={user.name} value={user.name}>{user.name}</option>
                 ))}
               </select>
             </div>

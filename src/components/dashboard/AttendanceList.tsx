@@ -100,6 +100,10 @@ export default function AttendanceList() {
   };
 
   const allSessionNos = Array.from({ length: Math.max(17, sessions.length) }, (_, i) => i + 1);
+  const PAGE_SIZE = 15;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(participants.length / PAGE_SIZE);
+  const pagedParticipants = participants.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   if (loading) {
     return <div className={styles.loading}>Memuat data absensi...</div>;
@@ -244,7 +248,7 @@ export default function AttendanceList() {
               </tr>
             </thead>
             <tbody>
-              {participants.map(name => (
+              {pagedParticipants.map(name => (
                 <tr key={name}>
                   <td className={styles.stickyCol}><span>{name}</span></td>
                   {allSessionNos.map(sessionNo => {
@@ -263,6 +267,19 @@ export default function AttendanceList() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "16px 0 4px" }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === 0 ? "#f8fafc" : "#fff", color: page === 0 ? "#cbd5e1" : "#334155", cursor: page === 0 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{page + 1} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === totalPages - 1 ? "#f8fafc" : "#fff", color: page === totalPages - 1 ? "#cbd5e1" : "#334155", cursor: page === totalPages - 1 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              Next →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

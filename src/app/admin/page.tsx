@@ -407,6 +407,8 @@ function TabPostTest() {
   const [scores, setScores]               = useState<QuizScore[]>([]);
   const [participants, setParticipants]   = useState<string[]>([]);
   const [loading, setLoading]             = useState(true);
+  const [rekap_page, setRekapPage]        = useState(0);
+  const REKAP_PAGE_SIZE = 15;
 
   useEffect(() => {
     async function load() {
@@ -638,7 +640,7 @@ function TabPostTest() {
               </tr>
             </thead>
             <tbody>
-              {participants.map(p => {
+              {participants.slice(rekap_page * REKAP_PAGE_SIZE, (rekap_page + 1) * REKAP_PAGE_SIZE).map(p => {
                 const ss = activeSessions.map(i => bestScore(p, i));
                 const filled = ss.filter(s => s !== null) as number[];
                 const avg = filled.length ? Math.round(filled.reduce((a, b) => a + b, 0) / filled.length) : null;
@@ -664,6 +666,19 @@ function TabPostTest() {
             </tbody>
           </table>
         </div>
+        {Math.ceil(participants.length / REKAP_PAGE_SIZE) > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "16px 0 4px" }}>
+            <button onClick={() => setRekapPage(p => Math.max(0, p - 1))} disabled={rekap_page === 0}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: rekap_page === 0 ? "#f8fafc" : "#fff", color: rekap_page === 0 ? "#cbd5e1" : "#334155", cursor: rekap_page === 0 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{rekap_page + 1} / {Math.ceil(participants.length / REKAP_PAGE_SIZE)}</span>
+            <button onClick={() => setRekapPage(p => Math.min(Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1, p + 1))} disabled={rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "#f8fafc" : "#fff", color: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "#cbd5e1" : "#334155", cursor: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              Next →
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
