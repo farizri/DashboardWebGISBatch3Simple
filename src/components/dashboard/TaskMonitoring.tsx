@@ -69,7 +69,7 @@ export default function TaskMonitoring() {
     if (checklistMap[s.participant]) checklistMap[s.participant].add(s.task_id);
   });
 
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 16;
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(participants.length / PAGE_SIZE);
   const pagedParticipants = participants.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

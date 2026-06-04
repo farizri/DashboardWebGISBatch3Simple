@@ -46,7 +46,7 @@ export default function FinalProjectComing() {
   const projectMap: Record<string, FinalProject> = {};
   projects.forEach(fp => { projectMap[fp.participant] = fp; });
 
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 16;
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(participants.length / PAGE_SIZE);
   const pagedParticipants = participants.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

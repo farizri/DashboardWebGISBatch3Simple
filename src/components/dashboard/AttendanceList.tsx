@@ -100,7 +100,7 @@ export default function AttendanceList() {
   };
 
   const allSessionNos = Array.from({ length: Math.max(17, sessions.length) }, (_, i) => i + 1);
-  const PAGE_SIZE = 15;
+  const PAGE_SIZE = 16;
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(participants.length / PAGE_SIZE);
   const pagedParticipants = participants.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

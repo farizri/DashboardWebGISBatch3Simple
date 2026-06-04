@@ -408,7 +408,7 @@ function TabPostTest() {
   const [participants, setParticipants]   = useState<string[]>([]);
   const [loading, setLoading]             = useState(true);
   const [rekap_page, setRekapPage]        = useState(0);
-  const REKAP_PAGE_SIZE = 15;
+  const REKAP_PAGE_SIZE = 16;
 
   useEffect(() => {
     async function load() {
