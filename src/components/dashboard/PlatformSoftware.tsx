@@ -87,7 +87,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     guideSteps: [
       "Kunjungi platform GEO MAPID dan buat akun baru dengan email aktif Anda.",
       "Setelah mendaftar, masuk ke menu Redeem Code.",
-      "Masukkan kode akses bootcamp: WGA263 untuk mengaktifkan akses penuh platform.",
+      "Masukkan kode akses bootcamp: WG2603 untuk mengaktifkan akses penuh platform.",
       "Eksplorasi fitur digitasi, upload GeoJSON, dan aktifkan API Endpoint data spasial Anda."
     ],
     downloadUrl: "https://geo.mapid.io"
@@ -167,9 +167,9 @@ export default function PlatformSoftware() {
                     <div className={styles.redeemBox}>
                       <span className={styles.redeemLabel}>KODE AKSES BOOTCAMP</span>
                       <div className={styles.redeemCode}>
-                        <span className={styles.codeText}>WGA263</span>
+                        <span className={styles.codeText}>WG2603</span>
                         <button
-                          onClick={() => handleCopy("WGA263", "geomapid")}
+                          onClick={() => handleCopy("WG2603", "geomapid")}
                           className={styles.copyBtn}
                         >
                           {copiedId === "geomapid" ? <><Check size={12} /> Tersalin</> : <><Copy size={12} /> Salin</>}
