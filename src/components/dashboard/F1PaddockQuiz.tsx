@@ -5,7 +5,7 @@ import { sfx } from "../../lib/sound";
 import { supabase } from "../../lib/supabase";
 import {
   Globe, Trophy, Play,
-  Home, Star, ThumbsUp, Target, AlertTriangle,
+  Home, Star, ThumbsUp, Target, AlertTriangle, BarChart2,
 } from "lucide-react";
 import styles from "./F1PaddockQuiz.module.css";
 
@@ -47,6 +47,10 @@ export default function F1PaddockQuiz() {
   const [selectedUser, setSelectedUser]           = useState<string>("");
   const [quizState, setQuizState]                 = useState<"LOBBY" | "PLAYING" | "RESULT">("LOBBY");
   const [loadingSessions, setLoadingSessions]     = useState(true);
+
+  // Recap state: set of "participant|session_key" that have submitted
+  const [quizDoneSet, setQuizDoneSet]   = useState<Set<string>>(new Set());
+  const [recapPage, setRecapPage]       = useState(0);
 
   const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx]     = useState<number>(0);
@@ -96,6 +100,17 @@ export default function F1PaddockQuiz() {
 
       setAvailableSessions(sessions);
       if (sessions.length > 0) setSelectedSession(sessions[0].session_key);
+
+      // Fetch recap: semua quiz_scores untuk membangun checklist
+      const { data: scores } = await supabase
+        .from("quiz_scores")
+        .select("participant,session_key");
+      const doneSet = new Set<string>();
+      (scores || []).forEach((r: { participant: string; session_key: number }) => {
+        doneSet.add(`${r.participant}|${r.session_key}`);
+      });
+      setQuizDoneSet(doneSet);
+
       setLoadingSessions(false);
     }
     load();
@@ -153,6 +168,7 @@ export default function F1PaddockQuiz() {
       });
 
       sfx.playSuccess();
+      setQuizDoneSet(prev => new Set(prev).add(`${activeUserName}|${selectedSession}`));
       setQuizState("RESULT");
     }
   }, [isAnswered, selectedAns, questions, currentIdx, answersStatus, score, selectedSession]);
@@ -202,6 +218,10 @@ export default function F1PaddockQuiz() {
 
   const sessionName = QUIZ_SESSIONS_MAP[selectedSession] || `Sesi ${selectedSession}`;
   const totalQ = questions.length || 10;
+
+  const RECAP_PAGE_SIZE = 16;
+  const recapTotalPages = Math.ceil(participants.length / RECAP_PAGE_SIZE);
+  const recapPaged = participants.slice(recapPage * RECAP_PAGE_SIZE, (recapPage + 1) * RECAP_PAGE_SIZE);
 
   const scoreEmoji =
     score === 100 ? <Trophy size={52} color="#f59e0b" /> :
@@ -273,6 +293,68 @@ export default function F1PaddockQuiz() {
               <Play size={14} /> MULAI POST TEST
             </button>
           </div>
+
+          {/* Recap Checklist */}
+          {availableSessions.length > 0 && (
+            <div className={styles.databaseCard}>
+              <div className={styles.databaseHeaderContainer}>
+                <div className={styles.databaseTitleGroup}>
+                  <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <BarChart2 size={17} /> Rekapitulasi Pengisian Post Test
+                  </h3>
+                  <p className={styles.databaseSubtitle}>Checklist peserta yang sudah mengisi post test per sesi.</p>
+                </div>
+              </div>
+              <div className={styles.tableWrapper}>
+                <table className={styles.gridTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.stickyCol}>Nama Peserta</th>
+                      {availableSessions.map(s => (
+                        <th key={s.session_key}>Post Test {s.session_key}</th>
+                      ))}
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recapPaged.map(p => {
+                      const doneCount = availableSessions.filter(s => quizDoneSet.has(`${p.name}|${s.session_key}`)).length;
+                      return (
+                        <tr key={p.name}>
+                          <td className={styles.stickyCol}><strong>{p.name}</strong></td>
+                          {availableSessions.map(s => (
+                            <td key={s.session_key} style={{ textAlign: "center" }}>
+                              {quizDoneSet.has(`${p.name}|${s.session_key}`)
+                                ? <span className={styles.gridScoreChecked}>✓</span>
+                                : <span className={styles.gridScoreDash}>-</span>}
+                            </td>
+                          ))}
+                          <td style={{ textAlign: "center" }}>
+                            <span className={doneCount === availableSessions.length ? styles.gridScoreExcellent : styles.gridScoreEmpty} style={{ padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 12, display: "inline-block" }}>
+                              {doneCount}/{availableSessions.length}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {recapTotalPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "16px 0 4px" }}>
+                  <button onClick={() => setRecapPage(p => Math.max(0, p - 1))} disabled={recapPage === 0}
+                    style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: recapPage === 0 ? "#f8fafc" : "#fff", color: recapPage === 0 ? "#cbd5e1" : "#334155", cursor: recapPage === 0 ? "not-allowed" : "pointer", fontSize: 13 }}>
+                    ← Prev
+                  </button>
+                  <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{recapPage + 1} / {recapTotalPages}</span>
+                  <button onClick={() => setRecapPage(p => Math.min(recapTotalPages - 1, p + 1))} disabled={recapPage === recapTotalPages - 1}
+                    style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: recapPage === recapTotalPages - 1 ? "#f8fafc" : "#fff", color: recapPage === recapTotalPages - 1 ? "#cbd5e1" : "#334155", cursor: recapPage === recapTotalPages - 1 ? "not-allowed" : "pointer", fontSize: 13 }}>
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
