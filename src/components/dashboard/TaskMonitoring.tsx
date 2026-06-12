@@ -14,7 +14,6 @@ export default function TaskMonitoring() {
   const [selectedName, setSelectedName] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(1);
   const [inputUrl, setInputUrl]         = useState("");
-  const [feedback, setFeedback]         = useState("");
   const [submissions, setSubmissions]   = useState<TaskSubmissionRow[]>([]);
   const [loading, setLoading]           = useState(true);
   const [submitting, setSubmitting]     = useState(false);
@@ -58,7 +57,6 @@ export default function TaskMonitoring() {
       setSubmissions(prev => [...prev, entry]);
       localStorage.setItem("mapid_active_username", selectedName);
       setInputUrl("");
-      setFeedback("");
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
     }
@@ -113,17 +111,7 @@ export default function TaskMonitoring() {
             <label>LINK PENGUMPULAN (GITHUB)</label>
             <input type="url" required placeholder="https://github.com/username/nama-repo" value={inputUrl} onChange={e => setInputUrl(e.target.value)} className={styles.formInput} />
           </div>
-          <div className={styles.formGroup}>
-            <label>BAGAIMANA PENDAPATMU SOAL SESI INI?</label>
-            <textarea
-              placeholder="Tuliskan kesan, feedback, atau hal yang kamu pelajari dari sesi ini..."
-              value={feedback}
-              onChange={e => setFeedback(e.target.value)}
-              rows={3}
-              className={styles.formInput}
-              style={{ resize: "vertical", fontFamily: "inherit" }}
-            />
-          </div>
+
           <button type="submit" disabled={submitting} className={styles.submitBtn} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", opacity: submitting ? 0.7 : 1 }}>
             <Plus size={15} /> {submitting ? "Mengirim..." : "Kirim Tugas"}
           </button>
