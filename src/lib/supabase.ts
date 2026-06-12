@@ -120,3 +120,17 @@ export interface LinkRow {
   url: string;
   sort_order: number;
 }
+
+export interface QuizFeedbackRow {
+  id?: string;
+  participant: string;
+  session_key: number;
+  material_relevance: number;
+  material_flow_clarity: number;
+  hands_on_helpfulness: number;
+  mentor_explanation: number;
+  facilitator_responsiveness: number;
+  webgis_project_readiness: number;
+  feedback_text?: string;
+  submitted_at?: string;
+}

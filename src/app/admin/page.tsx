@@ -7,7 +7,7 @@ import {
   Users, ClipboardCheck, BookOpenCheck, FolderOpen,
   LayoutDashboard, ScrollText, PlayCircle, Trophy,
   ChevronDown, ChevronUp, BarChart2, ImageIcon,
-  CalendarDays, Wrench, Link2,
+  CalendarDays, Wrench, Link2, Star,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { SessionRow, SoftwareRow, LinkRow } from "@/lib/supabase";
@@ -23,6 +23,13 @@ interface QuizQuestion {
 }
 interface Submission  { id: string; participant: string; task_id: number; task_number: string; task_title: string; url: string; submitted_at: string; }
 interface FinalProject{ participant: string; url: string; submitted_at: string; }
+interface QuizFeedback{
+  id: string; participant: string; session_key: number;
+  material_relevance: number; material_flow_clarity: number;
+  hands_on_helpfulness: number; mentor_explanation: number;
+  facilitator_responsiveness: number; webgis_project_readiness: number;
+  feedback_text?: string; submitted_at: string;
+}
 
 // ─── Quiz Session Labels ──────────────────────────────────
 const QUIZ_SESSIONS = [
@@ -59,6 +66,7 @@ function AdminContent() {
       {tab === "software"  && <TabSoftware />}
       {tab === "links"     && <TabLinks />}
       {tab === "final"     && <TabFinal />}
+      {tab === "feedback"  && <TabFeedback />}
     </div>
   );
 }
@@ -969,6 +977,180 @@ function TabFinal() {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// TAB: FEEDBACK EVALUASI SESI
+// ════════════════════════════════════════════════════════
+const FEEDBACK_FIELDS: { key: keyof QuizFeedback; label: string }[] = [
+  { key: "material_relevance",         label: "Relevansi Materi" },
+  { key: "material_flow_clarity",      label: "Kejelasan Alur Materi" },
+  { key: "hands_on_helpfulness",       label: "Aktivitas Hands-On" },
+  { key: "mentor_explanation",         label: "Penjelasan Mentor" },
+  { key: "facilitator_responsiveness", label: "Responsivitas Fasilitator" },
+  { key: "webgis_project_readiness",   label: "Kesiapan Project WebGIS" },
+];
+
+function StarRating({ value }: { value: number }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={12} fill={i <= value ? "#f59e0b" : "none"} color={i <= value ? "#f59e0b" : "#d1d5db"} />
+      ))}
+      <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginLeft: 4 }}>{value}</span>
+    </span>
+  );
+}
+
+function TabFeedback() {
+  const [feedbacks, setFeedbacks]     = useState<QuizFeedback[]>([]);
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [filterSession, setFilterSession] = useState<number>(0);
+  const [loading, setLoading]         = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [{ data: fb }, { data: p }] = await Promise.all([
+        supabase.from("quiz_feedback").select("*").order("submitted_at", { ascending: false }),
+        supabase.from("config_participants").select("name").order("sort_order"),
+      ]);
+      setFeedbacks((fb as QuizFeedback[]) || []);
+      setParticipants((p || []).map((x: { name: string }) => x.name));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) return <div className={styles.loading}>Memuat data feedback...</div>;
+
+  const sessions = Array.from(new Set(feedbacks.map(f => f.session_key))).sort((a,b) => a-b);
+  const filtered = filterSession === 0 ? feedbacks : feedbacks.filter(f => f.session_key === filterSession);
+
+  // Hitung rata-rata per sesi
+  const avgBySession = sessions.map(sk => {
+    const rows = feedbacks.filter(f => f.session_key === sk);
+    const avg = (field: keyof QuizFeedback) =>
+      rows.length ? (rows.reduce((s, r) => s + (r[field] as number), 0) / rows.length).toFixed(1) : "-";
+    return { sk, count: rows.length, avgs: Object.fromEntries(FEEDBACK_FIELDS.map(f => [f.key, avg(f.key)])) };
+  });
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <div>
+          <h2><Star size={20} /> Feedback Evaluasi Sesi</h2>
+          <p>Rekap penilaian evaluasi sesi dari seluruh peserta post test</p>
+        </div>
+      </div>
+
+      {/* Rata-rata per sesi */}
+      {avgBySession.length > 0 && (
+        <div className={styles.card}>
+          <div className={styles.cardTitle}><BarChart2 size={14} /> Rata-rata Penilaian per Sesi</div>
+          <div style={{ overflowX: "auto" }}>
+            <table className={styles.scoresTable}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Sesi</th>
+                  {FEEDBACK_FIELDS.map(f => <th key={f.key} style={{ whiteSpace: "nowrap", fontSize: 11 }}>{f.label}</th>)}
+                  <th>Responden</th>
+                </tr>
+              </thead>
+              <tbody>
+                {avgBySession.map(row => (
+                  <tr key={row.sk}>
+                    <td style={{ fontWeight: 700 }}>{QUIZ_SESSIONS[row.sk - 1] || `Sesi ${row.sk}`}</td>
+                    {FEEDBACK_FIELDS.map(f => (
+                      <td key={f.key} style={{ textAlign: "center" }}>
+                        <span className={`${styles.scorePill} ${Number(row.avgs[f.key]) >= 4 ? styles.scoreHigh : Number(row.avgs[f.key]) >= 3 ? styles.scoreMid : styles.scoreLow}`}>
+                          {row.avgs[f.key]}
+                        </span>
+                      </td>
+                    ))}
+                    <td style={{ textAlign: "center" }}>
+                      <span className={styles.scorePill}>{row.count}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Filter + tabel detail */}
+      <div className={styles.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+          <div className={styles.cardTitle} style={{ margin: 0 }}><ClipboardCheck size={14} /> Detail Jawaban Peserta</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>Filter Sesi:</label>
+            <select value={filterSession} onChange={e => setFilterSession(Number(e.target.value))}
+              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, color: "#334155", outline: "none", background: "#f8fafc" }}>
+              <option value={0}>Semua Sesi</option>
+              {sessions.map(sk => <option key={sk} value={sk}>Post Test {sk}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Belum ada feedback yang masuk.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className={styles.scoresTable}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Peserta</th>
+                  <th>Sesi</th>
+                  {FEEDBACK_FIELDS.map(f => <th key={f.key} style={{ whiteSpace: "nowrap", fontSize: 10 }}>{f.label}</th>)}
+                  <th style={{ textAlign: "left", minWidth: 180 }}>Saran / Kritik</th>
+                  <th>Waktu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(fb => (
+                  <tr key={fb.id}>
+                    <td style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{fb.participant}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <span className={styles.sessionNumBadge}>P{fb.session_key}</span>
+                    </td>
+                    {FEEDBACK_FIELDS.map(f => (
+                      <td key={f.key} style={{ textAlign: "center" }}>
+                        <StarRating value={fb[f.key] as number} />
+                      </td>
+                    ))}
+                    <td style={{ fontSize: 12, color: "#475569", maxWidth: 240, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
+                      {fb.feedback_text || <span style={{ color: "#cbd5e1" }}>—</span>}
+                    </td>
+                    <td style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                      {fb.submitted_at ? new Date(fb.submitted_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Komentar teks saja */}
+      {feedbacks.some(f => f.feedback_text) && (
+        <div className={styles.card}>
+          <div className={styles.cardTitle}><Star size={14} /> Semua Komentar Teks</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {feedbacks.filter(f => f.feedback_text).map(fb => (
+              <div key={fb.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: "#1e293b" }}>{fb.participant}</span>
+                  <span className={styles.sessionNumBadge}>Post Test {fb.session_key}</span>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: "#475569", lineHeight: 1.55 }}>{fb.feedback_text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

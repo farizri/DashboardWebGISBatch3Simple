@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import {
   Globe, Trophy, Play,
   Home, Star, ThumbsUp, Target, AlertTriangle, BarChart2,
+  ClipboardList, Send,
 } from "lucide-react";
 import styles from "./F1PaddockQuiz.module.css";
 
@@ -45,12 +46,24 @@ export default function F1PaddockQuiz() {
   const [availableSessions, setAvailableSessions] = useState<SessionOption[]>([]);
   const [selectedSession, setSelectedSession]     = useState<number>(0);
   const [selectedUser, setSelectedUser]           = useState<string>("");
-  const [quizState, setQuizState]                 = useState<"LOBBY" | "PLAYING" | "RESULT">("LOBBY");
+  const [quizState, setQuizState]                 = useState<"LOBBY" | "PLAYING" | "FEEDBACK" | "RESULT">("LOBBY");
   const [loadingSessions, setLoadingSessions]     = useState(true);
 
   // Recap state: set of "participant|session_key" that have submitted
   const [quizDoneSet, setQuizDoneSet]   = useState<Set<string>>(new Set());
   const [recapPage, setRecapPage]       = useState(0);
+
+  // Feedback / Evaluasi Sesi
+  const [fbValues, setFbValues] = useState({
+    material_relevance: 3,
+    material_flow_clarity: 3,
+    hands_on_helpfulness: 3,
+    mentor_explanation: 3,
+    facilitator_responsiveness: 3,
+    webgis_project_readiness: 3,
+  });
+  const [fbText, setFbText]         = useState("");
+  const [fbSubmitting, setFbSubmitting] = useState(false);
 
   const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx]     = useState<number>(0);
@@ -169,7 +182,7 @@ export default function F1PaddockQuiz() {
 
       sfx.playSuccess();
       setQuizDoneSet(prev => new Set(prev).add(`${activeUserName}|${selectedSession}`));
-      setQuizState("RESULT");
+      setQuizState("FEEDBACK");
     }
   }, [isAnswered, selectedAns, questions, currentIdx, answersStatus, score, selectedSession]);
 
@@ -214,7 +227,24 @@ export default function F1PaddockQuiz() {
     setSelectedAns(optIdx);
   };
 
-  const returnToLobby = () => setQuizState("LOBBY");
+  const returnToLobby = () => {
+    setQuizState("LOBBY");
+    setFbValues({ material_relevance: 3, material_flow_clarity: 3, hands_on_helpfulness: 3, mentor_explanation: 3, facilitator_responsiveness: 3, webgis_project_readiness: 3 });
+    setFbText("");
+  };
+
+  const handleFeedbackSubmit = async () => {
+    setFbSubmitting(true);
+    const activeUserName = localStorage.getItem("mapid_active_username") || selectedUser;
+    await supabase.from("quiz_feedback").insert({
+      participant: activeUserName,
+      session_key: selectedSession,
+      ...fbValues,
+      feedback_text: fbText.trim() || null,
+    });
+    setFbSubmitting(false);
+    setQuizState("RESULT");
+  };
 
   const sessionName = QUIZ_SESSIONS_MAP[selectedSession] || `Sesi ${selectedSession}`;
   const totalQ = questions.length || 10;
@@ -388,6 +418,75 @@ export default function F1PaddockQuiz() {
                 KIRIM &amp; LANJUT SOAL BERIKUTNYA ↗
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {quizState === "FEEDBACK" && (
+        <div className={styles.resultContainer}>
+          <div className={styles.feedbackCard}>
+            <div className={styles.feedbackSectionHead}>
+              <h3><ClipboardList size={20} /> Evaluasi Sesi</h3>
+              <p>Bantu kami meningkatkan kualitas pembelajaran WebGIS Development Bootcamp dengan memberikan penilaian terhadap sesi hari ini.</p>
+            </div>
+
+            <div className={styles.feedbackSliderGroup}>
+              {([
+                { key: "material_relevance",        label: "Seberapa relevan materi pada sesi ini dengan kebutuhan belajar Anda?" },
+                { key: "material_flow_clarity",     label: "Seberapa mudah Anda mengikuti alur penyampaian materi pada sesi ini?" },
+                { key: "hands_on_helpfulness",      label: "Seberapa membantu aktivitas hands-on dalam memahami materi yang dipelajari?" },
+                { key: "mentor_explanation",        label: "Seberapa membantu penjelasan mentor dalam memahami materi?" },
+                { key: "facilitator_responsiveness",label: "Seberapa responsif fasilitator dalam membantu kebutuhan atau pertanyaan peserta?" },
+                { key: "webgis_project_readiness",  label: "Seberapa membantu sesi ini dalam mempersiapkan Anda mengerjakan project WebGIS?" },
+              ] as { key: keyof typeof fbValues; label: string }[]).map((item, idx) => {
+                const val = fbValues[item.key];
+                const pct = ((val - 1) / 4) * 100;
+                return (
+                  <div key={item.key} className={styles.feedbackSliderItem}>
+                    <div className={styles.feedbackSliderLabel}>
+                      <span className={styles.feedbackSliderNum}>{idx + 1}</span>
+                      {item.label}
+                    </div>
+                    <div className={styles.feedbackSliderTrack}>
+                      <span className={styles.feedbackScaleLabel}>Sangat tidak puas</span>
+                      <input
+                        type="range"
+                        min={1} max={5} step={1}
+                        value={val}
+                        className={styles.feedbackRangeInput}
+                        style={{ "--progress": `${pct}%` } as React.CSSProperties}
+                        onChange={e => setFbValues(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
+                      />
+                      <span className={`${styles.feedbackScaleLabel} ${styles.feedbackScaleLabelRight}`}>Sangat puas</span>
+                      <span className={styles.feedbackValuePill}>{val}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ fontSize: 13.5, fontWeight: 700, color: "var(--primary)" }}>
+                Kritik, saran, atau rekomendasi untuk meningkatkan sesi pembelajaran berikutnya.
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500, marginLeft: 6 }}>(opsional)</span>
+              </label>
+              <textarea
+                className={styles.feedbackTextArea}
+                rows={4}
+                placeholder="Tulis kritik, saran, atau rekomendasi kamu di sini..."
+                value={fbText}
+                onChange={e => setFbText(e.target.value)}
+              />
+            </div>
+
+            <button
+              className={styles.feedbackSubmitBtn}
+              onClick={handleFeedbackSubmit}
+              disabled={fbSubmitting}
+            >
+              <Send size={15} />
+              {fbSubmitting ? "Mengirim evaluasi..." : "Kirim Evaluasi & Lihat Hasil"}
+            </button>
           </div>
         </div>
       )}
