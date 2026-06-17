@@ -17,6 +17,8 @@ import {
   LogOut,
   Eye,
   Star,
+  Users,
+  BadgeCheck,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -47,7 +49,9 @@ const ADMIN_MENU: MenuSection[] = [
       { id: "absensi",   name: "Absensi",              icon: ClipboardCheck },
       { id: "posttest",  name: "Post Test",             icon: BookOpenCheck },
       { id: "feedback",  name: "Feedback Evaluasi",     icon: Star },
+      { id: "peserta",   name: "Daftar Peserta",        icon: Users },
       { id: "tugas",     name: "Monitoring Tugas",      icon: FolderOpen },
+      { id: "penilaian", name: "Penilaian Tugas",       icon: BadgeCheck },
       { id: "materi",    name: "Materi & Rekaman",      icon: PlayCircle },
     ],
   },

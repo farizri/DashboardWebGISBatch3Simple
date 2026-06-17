@@ -67,6 +67,8 @@ function AdminContent() {
       {tab === "links"     && <TabLinks />}
       {tab === "final"     && <TabFinal />}
       {tab === "feedback"  && <TabFeedback />}
+      {tab === "peserta"   && <TabPeserta />}
+      {tab === "penilaian" && <TabPenilaian />}
     </div>
   );
 }
@@ -698,78 +700,52 @@ function getSessionQuestionsFrom(all: QuizQuestion[], key: number) {
 }
 
 // ════════════════════════════════════════════════════════
-// TAB: MONITORING TUGAS
+// TAB: DAFTAR PESERTA
 // ════════════════════════════════════════════════════════
-function TabTugas() {
+function TabPeserta() {
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [tasks, setTasks]               = useState<TaskItem[]>([]);
-  const [submissions, setSubmissions]   = useState<Submission[]>([]);
-  const [savingP, setSavingP]           = useState(false);
-  const [savedP, setSavedP]             = useState(false);
-  const [savingT, setSavingT]           = useState(false);
-  const [savedT, setSavedT]             = useState(false);
-  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]   = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
-        supabase.from("config_participants").select("*").order("sort_order"),
-        supabase.from("config_tasks").select("*").order("task_order"),
-        supabase.from("task_submissions").select("*").order("submitted_at", { ascending: false }),
-      ]);
-      setParticipants((p as Participant[]) || []);
-      setTasks((t as TaskItem[]) || []);
-      setSubmissions((s as Submission[]) || []);
+    supabase.from("config_participants").select("*").order("sort_order").then(({ data }) => {
+      setParticipants((data as Participant[]) || []);
       setLoading(false);
-    }
-    load();
+    });
   }, []);
 
-  // ── Participant CRUD ──
-  const addP = () => setParticipants(prev => [...prev, { name: "", email: "", sort_order: (prev[prev.length-1]?.sort_order||0)+1 }]);
-  const updateP = (i: number, f: "name"|"email", v: string) => setParticipants(prev => prev.map((p,idx) => idx===i ? {...p,[f]:v} : p));
-  const removeP = (i: number) => setParticipants(prev => prev.filter((_,idx) => idx!==i));
-  const handleSaveP = async () => {
-    setSavingP(true);
+  const add    = () => setParticipants(prev => [...prev, { name: "", email: "", sort_order: (prev[prev.length-1]?.sort_order||0)+1 }]);
+  const update = (i: number, f: "name"|"email", v: string) => setParticipants(prev => prev.map((p,idx) => idx===i ? {...p,[f]:v} : p));
+  const remove = (i: number) => setParticipants(prev => prev.filter((_,idx) => idx!==i));
+  const handleSave = async () => {
+    setSaving(true);
     await supabase.from("config_participants").delete().neq("sort_order", -999);
     const rows = participants.filter(p => p.name.trim()).map((p, i) => ({ name: p.name.trim(), email: p.email, sort_order: i+1 }));
     if (rows.length) await supabase.from("config_participants").insert(rows);
-    setSavingP(false); setSavedP(true); setTimeout(() => setSavedP(false), 2500);
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
 
-  // ── Task CRUD ──
-  const addT = () => setTasks(prev => [...prev, { task_order: (prev[prev.length-1]?.task_order||0)+1, number:"", title:"", phase:"" }]);
-  const updateT = (i: number, f: keyof TaskItem, v: string|number) => setTasks(prev => prev.map((t,idx) => idx===i ? {...t,[f]:v} : t));
-  const removeT = (i: number) => setTasks(prev => prev.filter((_,idx) => idx!==i));
-  const handleSaveT = async () => {
-    setSavingT(true);
-    await supabase.from("config_tasks").delete().neq("task_order", -999);
-    const rows = tasks.filter(t => t.number.trim()).map((t, i) => ({ task_order: i+1, number: t.number, title: t.title, phase: t.phase }));
-    if (rows.length) await supabase.from("config_tasks").insert(rows);
-    setSavingT(false); setSavedT(true); setTimeout(() => setSavedT(false), 2500);
-  };
-
-  // ── Build rekapitulasi matrix ──
-  const pNames = participants.filter(p => p.name.trim()).map(p => p.name);
-  const checklistMap: Record<string, Set<number>> = {};
-  pNames.forEach(p => { checklistMap[p] = new Set(); });
-  submissions.forEach(s => { if (checklistMap[s.participant]) checklistMap[s.participant].add(s.task_id); });
-
-  if (loading) return <div className={styles.loading}>Memuat data tugas...</div>;
+  if (loading) return <div className={styles.loading}>Memuat data peserta...</div>;
 
   return (
     <>
       <div className={styles.panelHeader}>
         <div>
-          <h2><FolderOpen size={20} /> Monitoring Tugas</h2>
-          <p>Kelola daftar peserta, daftar tugas, dan pantau rekapitulasi pengumpulan</p>
+          <h2><Users size={20} /> Daftar Peserta</h2>
+          <p>Kelola nama dan email seluruh peserta WebGIS Bootcamp Batch 3</p>
+        </div>
+        <div className={styles.rowActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan Daftar Peserta"}
+          </button>
         </div>
       </div>
 
-      {/* Daftar Peserta */}
       <div className={styles.card}>
         <div className={styles.cardTitle}><Users size={14} /> Daftar Nama Peserta</div>
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: -8 }}>Nama peserta yang ditambahkan di sini akan muncul di dropdown form pengumpulan learner.</p>
+        <p style={{ fontSize: 12, color: "#64748b", marginTop: -8 }}>Nama yang ditambahkan di sini muncul di semua dropdown form (absensi, tugas, post test).</p>
         <div className={styles.listCard}>
           <div className={styles.listRow} style={{ gridTemplateColumns: "24px 1fr 1fr auto", background: "#f8fafc" }}>
             <span className={styles.listNum}>#</span>
@@ -780,18 +756,67 @@ function TabTugas() {
           {participants.map((p, i) => (
             <div key={i} className={`${styles.listRow} ${styles.listRowParticipant}`}>
               <span className={styles.listNum}>{i+1}</span>
-              <input className={styles.input} value={p.name} onChange={e => updateP(i,"name",e.target.value)} placeholder="Nama peserta" style={{ fontSize: 12.5 }} />
-              <input className={styles.input} value={p.email} onChange={e => updateP(i,"email",e.target.value)} placeholder="email@..." style={{ fontSize: 12.5 }} />
-              <button className={styles.deleteBtn} onClick={() => removeP(i)}><Trash2 size={14} /></button>
+              <input className={styles.input} value={p.name} onChange={e => update(i,"name",e.target.value)} placeholder="Nama peserta" style={{ fontSize: 12.5 }} />
+              <input className={styles.input} value={p.email} onChange={e => update(i,"email",e.target.value)} placeholder="email@..." style={{ fontSize: 12.5 }} />
+              <button className={styles.deleteBtn} onClick={() => remove(i)}><Trash2 size={14} /></button>
             </div>
           ))}
         </div>
-        <button className={styles.addRowBtn} onClick={addP}><Plus size={14} /> Tambah Peserta</button>
-        <div className={styles.rowActions}>
-          {savedP && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
-          <button className={styles.saveBtn} onClick={handleSaveP} disabled={savingP}>
-            <Save size={14} /> {savingP ? "Menyimpan..." : "Simpan Daftar Peserta"}
-          </button>
+        <button className={styles.addRowBtn} onClick={add}><Plus size={14} /> Tambah Peserta</button>
+      </div>
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// TAB: MONITORING TUGAS
+// ════════════════════════════════════════════════════════
+function TabTugas() {
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [tasks, setTasks]               = useState<TaskItem[]>([]);
+  const [submissions, setSubmissions]   = useState<Submission[]>([]);
+  const [savingT, setSavingT]           = useState(false);
+  const [savedT, setSavedT]             = useState(false);
+  const [loading, setLoading]           = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
+        supabase.from("config_participants").select("name").order("sort_order"),
+        supabase.from("config_tasks").select("*").order("task_order"),
+        supabase.from("task_submissions").select("*").order("submitted_at", { ascending: false }),
+      ]);
+      setParticipants((p || []).map((x: { name: string }) => x.name));
+      setTasks((t as TaskItem[]) || []);
+      setSubmissions((s as Submission[]) || []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const addT    = () => setTasks(prev => [...prev, { task_order: (prev[prev.length-1]?.task_order||0)+1, number:"", title:"", phase:"" }]);
+  const updateT = (i: number, f: keyof TaskItem, v: string|number) => setTasks(prev => prev.map((t,idx) => idx===i ? {...t,[f]:v} : t));
+  const removeT = (i: number) => setTasks(prev => prev.filter((_,idx) => idx!==i));
+  const handleSaveT = async () => {
+    setSavingT(true);
+    await supabase.from("config_tasks").delete().neq("task_order", -999);
+    const rows = tasks.filter(t => t.number.trim()).map((t, i) => ({ task_order: i+1, number: t.number, title: t.title, phase: t.phase }));
+    if (rows.length) await supabase.from("config_tasks").insert(rows);
+    setSavingT(false); setSavedT(true); setTimeout(() => setSavedT(false), 2500);
+  };
+
+  const checklistMap: Record<string, Set<number>> = {};
+  participants.forEach(p => { checklistMap[p] = new Set(); });
+  submissions.forEach(s => { if (checklistMap[s.participant]) checklistMap[s.participant].add(s.task_id); });
+
+  if (loading) return <div className={styles.loading}>Memuat data tugas...</div>;
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <div>
+          <h2><FolderOpen size={20} /> Monitoring Tugas</h2>
+          <p>Kelola daftar tugas dan pantau rekapitulasi pengumpulan</p>
         </div>
       </div>
 
@@ -826,7 +851,7 @@ function TabTugas() {
         </div>
       </div>
 
-      {/* Rekapitulasi — sama persis dengan learner */}
+      {/* Rekapitulasi */}
       <div className={styles.card} style={{ padding: "20px 16px" }}>
         <div className={styles.cardTitle}><BarChart2 size={14} /> Rekapitulasi Pengumpulan Tugas</div>
         <p style={{ fontSize: 12, color: "#64748b", marginTop: -8 }}>Checklist pengumpulan tugas seluruh peserta.</p>
@@ -840,7 +865,7 @@ function TabTugas() {
               </tr>
             </thead>
             <tbody>
-              {pNames.map(name => {
+              {participants.map(name => {
                 const submitted = checklistMap[name];
                 const total = submitted?.size || 0;
                 return (
@@ -850,8 +875,7 @@ function TabTugas() {
                       <td key={t.task_order}>
                         {submitted?.has(t.task_order)
                           ? <span className={`${styles.scorePill} ${styles.scoreHigh}`} style={{ fontSize: 12 }}>✓</span>
-                          : <span className={styles.scoreEmpty}>—</span>
-                        }
+                          : <span className={styles.scoreEmpty}>—</span>}
                       </td>
                     ))}
                     <td>
@@ -865,6 +889,160 @@ function TabTugas() {
             </tbody>
           </table>
         </div>
+      </div>
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// TAB: PENILAIAN TUGAS
+// ════════════════════════════════════════════════════════
+interface TaskScore { participant: string; task_id: number; score: number; }
+
+function TabPenilaian() {
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [scores, setScores]           = useState<Record<string, number>>({});
+  const [saving, setSaving]           = useState<Record<string, boolean>>({});
+  const [saved, setSaved]             = useState<Record<string, boolean>>({});
+  const [loading, setLoading]         = useState(true);
+
+  const scoreKey = (participant: string, task_id: number) => `${participant}__${task_id}`;
+
+  useEffect(() => {
+    async function load() {
+      const [{ data: s }, { data: sc }] = await Promise.all([
+        supabase.from("task_submissions")
+          .select("id,participant,task_id,task_number,task_title,url,submitted_at")
+          .order("participant").order("task_id"),
+        supabase.from("task_scores").select("participant,task_id,score"),
+      ]);
+      setSubmissions((s as Submission[]) || []);
+      const map: Record<string, number> = {};
+      (sc as TaskScore[] || []).forEach(r => { map[scoreKey(r.participant, r.task_id)] = r.score; });
+      setScores(map);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const handleScore = async (participant: string, task_id: number, score: number) => {
+    const key = scoreKey(participant, task_id);
+    setScores(prev => ({ ...prev, [key]: score }));
+    setSaving(prev => ({ ...prev, [key]: true }));
+    await supabase.from("task_scores").upsert(
+      { participant, task_id, score },
+      { onConflict: "participant,task_id" }
+    );
+    setSaving(prev => ({ ...prev, [key]: false }));
+    setSaved(prev => ({ ...prev, [key]: true }));
+    setTimeout(() => setSaved(prev => ({ ...prev, [key]: false })), 2000);
+  };
+
+  const [filterTaskId, setFilterTaskId] = useState<number | "all">("all");
+  const SCORE_OPTIONS = Array.from({ length: 19 }, (_, i) => 10 + i * 5); // 10,15,...,100
+
+  // Unique task list derived from submissions for filter options
+  const uniqueTasks = Array.from(
+    new Map(submissions.map(s => [s.task_id, { task_id: s.task_id, task_number: s.task_number, task_title: s.task_title }])).values()
+  ).sort((a, b) => a.task_id - b.task_id);
+
+  const filteredSubmissions = filterTaskId === "all"
+    ? submissions
+    : submissions.filter(s => s.task_id === filterTaskId);
+
+  if (loading) return <div className={styles.loading}>Memuat data penilaian...</div>;
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <div>
+          <h2><CheckCircle size={20} /> Penilaian Tugas</h2>
+          <p>Beri nilai tugas peserta berdasarkan link GitHub yang dikumpulkan (rentang 10–100, step 5)</p>
+        </div>
+      </div>
+
+      <div className={styles.card} style={{ padding: "20px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          <div className={styles.cardTitle} style={{ marginBottom: 0 }}><BarChart2 size={14} /> Daftar Pengumpulan &amp; Penilaian</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>Filter tugas:</span>
+            <select
+              value={filterTaskId}
+              onChange={e => setFilterTaskId(e.target.value === "all" ? "all" : Number(e.target.value))}
+              style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: 12.5, color: "#334155", background: "#f8fafc", outline: "none", cursor: "pointer" }}
+            >
+              <option value="all">Semua Tugas ({submissions.length})</option>
+              {uniqueTasks.map(t => (
+                <option key={t.task_id} value={t.task_id}>
+                  {t.task_number} — {t.task_title} ({submissions.filter(s => s.task_id === t.task_id).length} peserta)
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {submissions.length === 0 ? (
+          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Belum ada tugas yang dikumpulkan.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className={styles.scoresTable} style={{ minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", minWidth: 160 }}>Nama Peserta</th>
+                  <th style={{ textAlign: "left", minWidth: 100 }}>Tugas</th>
+                  <th style={{ textAlign: "left", minWidth: 100 }}>Judul</th>
+                  <th style={{ minWidth: 80 }}>GitHub</th>
+                  <th style={{ minWidth: 120 }}>Nilai</th>
+                  <th style={{ minWidth: 60 }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSubmissions.map(sub => {
+                  const key   = scoreKey(sub.participant, sub.task_id);
+                  const score = scores[key];
+                  const isSaving = saving[key];
+                  const isSaved  = saved[key];
+                  return (
+                    <tr key={sub.id}>
+                      <td style={{ fontWeight: 700 }}>{sub.participant}</td>
+                      <td>
+                        <span className={styles.sessionNumBadge}>{sub.task_number}</span>
+                      </td>
+                      <td style={{ fontSize: 12, color: "#475569" }}>{sub.task_title}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <a href={sub.url} target="_blank" rel="noreferrer"
+                          className={styles.linkBtn} style={{ fontSize: 11, padding: "4px 8px" }}>
+                          <ExternalLink size={11} /> Lihat
+                        </a>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <select
+                          value={score ?? ""}
+                          onChange={e => handleScore(sub.participant, sub.task_id, Number(e.target.value))}
+                          style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12.5, fontWeight: 700, color: score ? (score >= 80 ? "#16a34a" : score >= 60 ? "#ca8a04" : "#dc2626") : "#94a3b8", background: "#f8fafc", outline: "none", cursor: "pointer", minWidth: 80 }}
+                        >
+                          <option value="">— Nilai —</option>
+                          {SCORE_OPTIONS.map(v => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {isSaving
+                          ? <span style={{ fontSize: 11, color: "#94a3b8" }}>...</span>
+                          : isSaved
+                            ? <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700 }}>✓ Tersimpan</span>
+                            : score
+                              ? <span className={`${styles.scorePill} ${score >= 80 ? styles.scoreHigh : score >= 60 ? styles.scoreMid : styles.scoreLow}`}>{score}</span>
+                              : <span style={{ fontSize: 11, color: "#cbd5e1" }}>—</span>
+                        }
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

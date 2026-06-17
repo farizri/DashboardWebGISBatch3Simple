@@ -236,12 +236,18 @@ export default function F1PaddockQuiz() {
   const handleFeedbackSubmit = async () => {
     setFbSubmitting(true);
     const activeUserName = localStorage.getItem("mapid_active_username") || selectedUser;
-    await supabase.from("quiz_feedback").insert({
+    const { error } = await supabase.from("quiz_feedback").insert({
       participant: activeUserName,
       session_key: selectedSession,
       ...fbValues,
       feedback_text: fbText.trim() || null,
     });
+    if (error) {
+      console.error("Feedback insert error:", error);
+      alert(`Gagal menyimpan evaluasi: ${error.message}`);
+      setFbSubmitting(false);
+      return;
+    }
     setFbSubmitting(false);
     setQuizState("RESULT");
   };
