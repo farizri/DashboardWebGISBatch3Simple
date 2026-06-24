@@ -114,15 +114,14 @@ export default function MentoringGroup() {
             const isPast   = i < activePhaseIdx;
             return (
               <div key={i} className={styles.phaseCard}
-                style={{ background: isActive ? p.bg : "#f8fafc", borderColor: isActive ? p.border : "#e2e8f0", opacity: isPast ? 0.55 : 1 }}>
+                style={{ background: p.bg, borderColor: p.border }}>
                 <div className={styles.phaseTop}>
-                  <div className={styles.phaseIconBox} style={{ background: isActive ? p.color + "18" : "#f1f5f9" }}>
-                    <p.Icon size={18} color={isActive ? p.color : "#94a3b8"} />
+                  <div className={styles.phaseIconBox} style={{ background: p.color + "18" }}>
+                    <p.Icon size={18} color={p.color} />
                   </div>
                   <div>
-                    <div className={styles.phaseLabel} style={{ color: isActive ? p.color : "#94a3b8" }}>
+                    <div className={styles.phaseLabel} style={{ color: p.color }}>
                       {p.label}
-                      {isActive && <span className={styles.activeChip} style={{ background: p.color }}>AKTIF</span>}
                     </div>
                     <div className={styles.phaseSublabel}>{p.sublabel}</div>
                   </div>
@@ -130,7 +129,7 @@ export default function MentoringGroup() {
                 <ul className={styles.phasePoints}>
                   {p.points.map((pt, j) => (
                     <li key={j}>
-                      <pt.Icon size={14} color={isActive ? p.color : "#94a3b8"} className={styles.phasePointIcon} />
+                      <pt.Icon size={14} color={p.color} className={styles.phasePointIcon} />
                       <span>{pt.text}</span>
                     </li>
                   ))}
