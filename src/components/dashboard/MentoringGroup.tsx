@@ -57,9 +57,9 @@ const PHASES: Phase[] = [
 ];
 
 const MENTOR_STYLES: Record<string, { accent: string; light: string; border: string; avatar: string }> = {
-  "Mas Raden": { accent: "#1d4ed8", light: "#eff6ff", border: "#bfdbfe", avatar: "RD" },
-  "Mas Rifqi":  { accent: "#b45309", light: "#fefce8", border: "#fde68a", avatar: "RF" },
-  "Mas Faiz":   { accent: "#be185d", light: "#fdf2f8", border: "#f9a8d4", avatar: "FZ" },
+  "Raden Pranantya":   { accent: "#1d4ed8", light: "#eff6ff", border: "#bfdbfe", avatar: "RP" },
+  "Rifqi Naufal":      { accent: "#b45309", light: "#fefce8", border: "#fde68a", avatar: "RN" },
+  "Ahmad Zaenun Faiz": { accent: "#be185d", light: "#fdf2f8", border: "#f9a8d4", avatar: "AZ" },
 };
 
 function getActivePhaseIdx(): number {
@@ -70,16 +70,9 @@ function getActivePhaseIdx(): number {
 }
 
 export default function MentoringGroup() {
-  const [groups, setGroups]             = useState<GroupData[]>([]);
-  const [activeUser, setActiveUser]     = useState("");
-  const [myGroup, setMyGroup]           = useState<GroupData | null>(null);
+  const [groups, setGroups]               = useState<GroupData[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
-  const [loading, setLoading]           = useState(true);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("mapid_active_username") || "";
-    setActiveUser(saved);
-  }, []);
+  const [loading, setLoading]             = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -96,21 +89,13 @@ export default function MentoringGroup() {
         }
         map.get(r.group_number)!.members.push(r.participant_name);
       });
-      const list = Array.from(map.values()).sort((a, b) => a.group_number - b.group_number);
-      setGroups(list);
+      setGroups(Array.from(map.values()).sort((a, b) => a.group_number - b.group_number));
       setLoading(false);
     }
     load();
   }, []);
 
-  useEffect(() => {
-    if (!activeUser || groups.length === 0) return;
-    const found = groups.find(g => g.members.includes(activeUser));
-    setMyGroup(found || null);
-    if (found) setExpandedGroup(found.group_number);
-  }, [activeUser, groups]);
-
-  const mentors = ["Mas Raden", "Mas Rifqi", "Mas Faiz"];
+  const mentors = ["Raden Pranantya", "Rifqi Naufal", "Ahmad Zaenun Faiz"];
   const activePhaseIdx = getActivePhaseIdx();
 
   return (
@@ -119,34 +104,6 @@ export default function MentoringGroup() {
         <h2><Users size={22} style={{ display:"inline", verticalAlign:"middle", marginRight:8 }} />Kelompok Mentoring</h2>
         <p>Panduan arahan mentoring dan informasi kelompokmu di WebGIS Bootcamp Batch 3</p>
       </div>
-
-      {/* My Group Highlight */}
-      {myGroup && (() => {
-        const ms = MENTOR_STYLES[myGroup.mentor_name] || MENTOR_STYLES["Mas Raden"];
-        return (
-          <div className={styles.myGroupCard} style={{ borderColor: ms.accent, background: ms.light }}>
-            <div className={styles.myGroupBadge} style={{ background: ms.accent }}>KELOMPOKMU</div>
-            <div className={styles.myGroupContent}>
-              <div className={styles.myGroupAvatar} style={{ background: ms.accent }}>
-                {ms.avatar}
-              </div>
-              <div>
-                <div className={styles.myGroupTitle} style={{ color: ms.accent }}>
-                  Kelompok {myGroup.group_number} · {myGroup.mentor_name}
-                </div>
-                <div className={styles.myGroupMembers}>
-                  {myGroup.members.map((m, i) => (
-                    <span key={i} className={styles.memberChip}
-                      style={{ background: m === activeUser ? ms.accent : "#f1f5f9", color: m === activeUser ? "#fff" : "#475569", fontWeight: m === activeUser ? 800 : 500 }}>
-                      {m === activeUser ? "👤 " : ""}{m}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Fase Timeline */}
       <div className={styles.phaseSection}>
@@ -206,28 +163,22 @@ export default function MentoringGroup() {
                 <div className={styles.mentorGroups}>
                   {mentorGroups.map(group => {
                     const isOpen = expandedGroup === group.group_number;
-                    const isMine = myGroup?.group_number === group.group_number;
                     return (
-                      <div key={group.group_number} className={styles.groupRow}
-                        style={{ borderLeft: isMine ? `3px solid ${ms.accent}` : "3px solid transparent" }}>
+                      <div key={group.group_number} className={styles.groupRow}>
                         <button className={styles.groupToggle}
                           onClick={() => setExpandedGroup(isOpen ? null : group.group_number)}>
                           <span className={styles.groupNum} style={{ background: ms.accent }}>
                             Kelompok {group.group_number}
                           </span>
-                          {isMine && <span className={styles.myTag} style={{ color: ms.accent }}>✦ Kelompokmu</span>}
                           <span className={styles.groupCount}>{group.members.length} peserta</span>
                           <span className={styles.chevron}>{isOpen ? "▲" : "▼"}</span>
                         </button>
                         {isOpen && (
                           <div className={styles.memberList}>
                             {group.members.map((name, idx) => (
-                              <div key={idx} className={styles.memberRow}
-                                style={{ background: name === activeUser ? ms.light : "transparent", fontWeight: name === activeUser ? 800 : 400 }}>
+                              <div key={idx} className={styles.memberRow}>
                                 <span className={styles.memberNum}>{idx + 1}</span>
-                                <span style={{ color: name === activeUser ? ms.accent : "#334155" }}>
-                                  {name === activeUser ? "👤 " : ""}{name}
-                                </span>
+                                <span style={{ color: "#334155" }}>{name}</span>
                               </div>
                             ))}
                           </div>

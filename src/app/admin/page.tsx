@@ -1650,24 +1650,24 @@ interface GroupRow { group_number: number; mentor_name: string; participant_name
 interface GroupConfig { group_number: number; mentor_name: string; members: string[]; }
 
 const MENTOR_COLORS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
-  "Mas Raden": { bg: "#eff6ff", border: "#bfdbfe", badge: "#1d4ed8", text: "#1e40af" },
-  "Mas Rifqi":  { bg: "#fefce8", border: "#fde68a", badge: "#b45309", text: "#92400e" },
-  "Mas Faiz":   { bg: "#fdf2f8", border: "#f9a8d4", badge: "#be185d", text: "#9d174d" },
+  "Raden Pranantya":   { bg: "#eff6ff", border: "#bfdbfe", badge: "#1d4ed8", text: "#1e40af" },
+  "Rifqi Naufal":      { bg: "#fefce8", border: "#fde68a", badge: "#b45309", text: "#92400e" },
+  "Ahmad Zaenun Faiz": { bg: "#fdf2f8", border: "#f9a8d4", badge: "#be185d", text: "#9d174d" },
 };
 
-const MENTOR_OPTIONS = ["Mas Raden", "Mas Rifqi", "Mas Faiz"];
+const MENTOR_OPTIONS = ["Raden Pranantya", "Rifqi Naufal", "Ahmad Zaenun Faiz"];
 
 // Seed data dari pembagian resmi Batch 3
 const SEED_ROWS: GroupRow[] = [
-  ...["Kalvin Reza Pratama","Rafi Fistra Ali","Binar Aulia Setyawan","Athirah Hamzah","Azya Naurah Sumakhalda","Robertho Kadji","Rinjani Putri Djunaedi","Rizki Amara Putri","Muhammad Thariq Aziz"].map(n=>({group_number:1,mentor_name:"Mas Raden",participant_name:n})),
-  ...["Adinda Dwi Yulianto","Abdullah Yusuf Syahadah","Muhammad Aryasatya Rafliando","Ghalih N. Wicaksono","Arfan Ferdiansyah","Dimas Tri Nur Hidayat","Riyan Alaji","Mujahid Sukarno","Abdul Mujib"].map(n=>({group_number:2,mentor_name:"Mas Raden",participant_name:n})),
-  ...["Agung Ashshiddiqi","Ahmad Asmuri Haruna","Tika Mutiara Ula","Rachmadhiya Salsabila","Camilla Rosanti Budimansyah","Akbar Hidayatuloh","Fathi Muzaqi","Agus Sudiono"].map(n=>({group_number:3,mentor_name:"Mas Raden",participant_name:n})),
-  ...["Alvito Krishna Balapradhana","Supriyadi","Agus Santoso","Kristuanto Nugroho Saputro","Dwiky Himawan Prabowo","Muhammad Maulana Rizki","Harizky Arfianto","Muhammad Asyroful Mujib","Katarina Andrea Laurentia"].map(n=>({group_number:4,mentor_name:"Mas Rifqi",participant_name:n})),
-  ...["Naufal Awaly Raihan","Farel Ahadyatulakbar Aditama","Febrian Fadila Rizky","Fabian Surya Pramudya","Adnan Yusuf Hartawan","Yana Wicaksana","Adnan Ananda","Niken Aprilia Sandyarani","Muhammad Ayyub"].map(n=>({group_number:5,mentor_name:"Mas Rifqi",participant_name:n})),
-  ...["Ferry Febrian","Nabila Nahdatul Husna","Daffa' 'Alim Al Adzin","Muhammad Caesar Almayda Wira","Muhammad Rifki","Najmu Laila","Nadhia Ferlia Fara","Ilham Bagus Wiranto","Salsabila Rosa Batubara"].map(n=>({group_number:6,mentor_name:"Mas Rifqi",participant_name:n})),
-  ...["Indri Puspita","Haidar Ismail","Delia Lathifah","Wahyu Panji Sugiantoro","Lukman Hakim","Zakiya Rozqi Auliya","Aminudin Siregar","Putra Rizki Ramadhan","Alfian Firdaus"].map(n=>({group_number:7,mentor_name:"Mas Faiz",participant_name:n})),
-  ...["Izza Rachman Suwandi","Aprilius Nadzario Mulya Clara","A Yusril Ihza Mahendra","Ramadian Irvanizar","Ester Marlina Mumu","Nawal Syafiq Farihan","Titanio Yudista","Kanesia Tahira","Damar Panoto"].map(n=>({group_number:8,mentor_name:"Mas Faiz",participant_name:n})),
-  ...["Habibi Faridh","Ayesha Amalia Putri","Surya Dewi","Aulia Sugesti Putri","Linda Ambala Tifa Ramadhani","Nadya Fadhilah Febrianti","Ahmad Fauzi Budjang","Saffaanatin Nafiis"].map(n=>({group_number:9,mentor_name:"Mas Faiz",participant_name:n})),
+  ...["Kalvin Reza Pratama","Rafi Fistra Ali","Binar Aulia Setyawan","Athirah Hamzah","Azya Naurah Sumakhalda","Robertho Kadji","Rinjani Putri Djunaedi","Rizki Amara Putri","Muhammad Thariq Aziz"].map(n=>({group_number:1,mentor_name:"Raden Pranantya",participant_name:n})),
+  ...["Adinda Dwi Yulianto","Abdullah Yusuf Syahadah","Muhammad Aryasatya Rafliando","Ghalih N. Wicaksono","Arfan Ferdiansyah","Dimas Tri Nur Hidayat","Riyan Alaji","Mujahid Sukarno","Abdul Mujib"].map(n=>({group_number:2,mentor_name:"Raden Pranantya",participant_name:n})),
+  ...["Agung Ashshiddiqi","Ahmad Asmuri Haruna","Tika Mutiara Ula","Rachmadhiya Salsabila","Camilla Rosanti Budimansyah","Akbar Hidayatuloh","Fathi Muzaqi","Agus Sudiono"].map(n=>({group_number:3,mentor_name:"Raden Pranantya",participant_name:n})),
+  ...["Alvito Krishna Balapradhana","Supriyadi","Agus Santoso","Kristuanto Nugroho Saputro","Dwiky Himawan Prabowo","Muhammad Maulana Rizki","Harizky Arfianto","Muhammad Asyroful Mujib","Katarina Andrea Laurentia"].map(n=>({group_number:4,mentor_name:"Rifqi Naufal",participant_name:n})),
+  ...["Naufal Awaly Raihan","Farel Ahadyatulakbar Aditama","Febrian Fadila Rizky","Fabian Surya Pramudya","Adnan Yusuf Hartawan","Yana Wicaksana","Adnan Ananda","Niken Aprilia Sandyarani","Muhammad Ayyub"].map(n=>({group_number:5,mentor_name:"Rifqi Naufal",participant_name:n})),
+  ...["Ferry Febrian","Nabila Nahdatul Husna","Daffa' 'Alim Al Adzin","Muhammad Caesar Almayda Wira","Muhammad Rifki","Najmu Laila","Nadhia Ferlia Fara","Ilham Bagus Wiranto","Salsabila Rosa Batubara"].map(n=>({group_number:6,mentor_name:"Rifqi Naufal",participant_name:n})),
+  ...["Indri Puspita","Haidar Ismail","Delia Lathifah","Wahyu Panji Sugiantoro","Lukman Hakim","Zakiya Rozqi Auliya","Aminudin Siregar","Putra Rizki Ramadhan","Alfian Firdaus"].map(n=>({group_number:7,mentor_name:"Ahmad Zaenun Faiz",participant_name:n})),
+  ...["Izza Rachman Suwandi","Aprilius Nadzario Mulya Clara","A Yusril Ihza Mahendra","Ramadian Irvanizar","Ester Marlina Mumu","Nawal Syafiq Farihan","Titanio Yudista","Kanesia Tahira","Damar Panoto"].map(n=>({group_number:8,mentor_name:"Ahmad Zaenun Faiz",participant_name:n})),
+  ...["Habibi Faridh","Ayesha Amalia Putri","Surya Dewi","Aulia Sugesti Putri","Linda Ambala Tifa Ramadhani","Nadya Fadhilah Febrianti","Ahmad Fauzi Budjang","Saffaanatin Nafiis"].map(n=>({group_number:9,mentor_name:"Ahmad Zaenun Faiz",participant_name:n})),
 ];
 
 function rowsToGroups(rows: GroupRow[]): GroupConfig[] {
