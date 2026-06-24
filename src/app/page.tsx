@@ -11,6 +11,7 @@ import MateriVideo from "@/components/dashboard/MateriVideo";
 import F1PaddockQuiz from "@/components/dashboard/F1PaddockQuiz";
 import FinalProjectComing from "@/components/dashboard/FinalProjectComing";
 import LinkPendukung from "@/components/dashboard/LinkPendukung";
+import MentoringGroup from "@/components/dashboard/MentoringGroup";
 import styles from "./page.module.css";
 
 function DashboardContent() {
@@ -45,6 +46,8 @@ function DashboardContent() {
       return <PlatformSoftware />;
     case "final_project":
       return <FinalProjectComing />;
+    case "mentoring":
+      return <MentoringGroup />;
     case "quiz":
       return <F1PaddockQuiz />;
     case "links":

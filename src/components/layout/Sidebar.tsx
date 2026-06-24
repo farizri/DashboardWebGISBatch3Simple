@@ -13,6 +13,7 @@ import {
   Trophy,
   Link2,
   Shield,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -55,7 +56,8 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     title: "PORTFOLIO",
     items: [
-      { id: "final_project", name: "Final Project", icon: Trophy },
+      { id: "mentoring",     name: "Kelompok Mentoring", icon: UserCheck },
+      { id: "final_project", name: "Final Project",      icon: Trophy },
     ],
   },
   {

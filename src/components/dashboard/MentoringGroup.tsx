@@ -1,0 +1,246 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { Users, MessageSquare, GraduationCap, Trophy, Rocket, CalendarCheck } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import styles from "./MentoringGroup.module.css";
+
+interface GroupRow {
+  group_number: number;
+  mentor_name: string;
+  participant_name: string;
+}
+
+interface GroupData {
+  group_number: number;
+  mentor_name: string;
+  members: string[];
+}
+
+interface PhasePoint { Icon: React.ElementType; text: string; }
+interface Phase {
+  label: string; sublabel: string; color: string; bg: string; border: string;
+  Icon: React.ElementType; start: Date; end: Date; points: PhasePoint[];
+}
+
+const PHASES: Phase[] = [
+  {
+    label: "Pra-Mentoring", sublabel: "24 Jun – 31 Jul 2026",
+    color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe",
+    Icon: MessageSquare,
+    start: new Date("2026-06-24"), end: new Date("2026-07-31"),
+    points: [
+      { Icon: Users,          text: "Berdiskusi seputar tugas dan seputar WebGIS bersama anggota kelompokmu sebagai kelompok belajar. Diskusi tugas bersama mentor tetap tersedia di channel #diskusi- Discord yang didampingi fasilitator." },
+      { Icon: MessageSquare,  text: "Mulai bertanya dan diskusi langsung ke mentormu via PC Discord jika ingin membahas WebGIS yang ingin kamu buat." },
+    ],
+  },
+  {
+    label: "Mentoring Aktif", sublabel: "1 Agu – 17 Agu 2026",
+    color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0",
+    Icon: GraduationCap,
+    start: new Date("2026-08-01"), end: new Date("2026-08-17"),
+    points: [
+      { Icon: CalendarCheck,  text: "Mentor mulai mendampingi kelompok masing-masing secara resmi mulai 1 Agustus 2026." },
+      { Icon: GraduationCap,  text: "Sesi mentoring kelompok minimal 1 kali per minggu — jadwal disepakati bersama mentor." },
+    ],
+  },
+  {
+    label: "Penilaian Final Project", sublabel: "Minggu terakhir Agustus",
+    color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe",
+    Icon: Trophy,
+    start: new Date("2026-08-10"), end: new Date("2026-08-17"),
+    points: [
+      { Icon: Trophy,   text: "Mentor melakukan penilaian Final Project pada minggu terakhir program." },
+      { Icon: Rocket,   text: "Pastikan WebGIS-mu sudah deployed dan siap dipresentasikan sebelum deadline." },
+    ],
+  },
+];
+
+const MENTOR_STYLES: Record<string, { accent: string; light: string; border: string; avatar: string }> = {
+  "Mas Raden": { accent: "#1d4ed8", light: "#eff6ff", border: "#bfdbfe", avatar: "RD" },
+  "Mas Rifqi":  { accent: "#b45309", light: "#fefce8", border: "#fde68a", avatar: "RF" },
+  "Mas Faiz":   { accent: "#be185d", light: "#fdf2f8", border: "#f9a8d4", avatar: "FZ" },
+};
+
+function getActivePhaseIdx(): number {
+  const now = new Date();
+  if (now < new Date("2026-08-01")) return 0;
+  if (now <= new Date("2026-08-17")) return 1;
+  return 2;
+}
+
+export default function MentoringGroup() {
+  const [groups, setGroups]             = useState<GroupData[]>([]);
+  const [activeUser, setActiveUser]     = useState("");
+  const [myGroup, setMyGroup]           = useState<GroupData | null>(null);
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
+  const [loading, setLoading]           = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("mapid_active_username") || "";
+    setActiveUser(saved);
+  }, []);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("config_groups")
+        .select("group_number,mentor_name,participant_name")
+        .order("group_number");
+
+      const rows = (data as GroupRow[]) || [];
+      const map = new Map<number, GroupData>();
+      rows.forEach(r => {
+        if (!map.has(r.group_number)) {
+          map.set(r.group_number, { group_number: r.group_number, mentor_name: r.mentor_name, members: [] });
+        }
+        map.get(r.group_number)!.members.push(r.participant_name);
+      });
+      const list = Array.from(map.values()).sort((a, b) => a.group_number - b.group_number);
+      setGroups(list);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!activeUser || groups.length === 0) return;
+    const found = groups.find(g => g.members.includes(activeUser));
+    setMyGroup(found || null);
+    if (found) setExpandedGroup(found.group_number);
+  }, [activeUser, groups]);
+
+  const mentors = ["Mas Raden", "Mas Rifqi", "Mas Faiz"];
+  const activePhaseIdx = getActivePhaseIdx();
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h2><Users size={22} style={{ display:"inline", verticalAlign:"middle", marginRight:8 }} />Kelompok Mentoring</h2>
+        <p>Panduan arahan mentoring dan informasi kelompokmu di WebGIS Bootcamp Batch 3</p>
+      </div>
+
+      {/* My Group Highlight */}
+      {myGroup && (() => {
+        const ms = MENTOR_STYLES[myGroup.mentor_name] || MENTOR_STYLES["Mas Raden"];
+        return (
+          <div className={styles.myGroupCard} style={{ borderColor: ms.accent, background: ms.light }}>
+            <div className={styles.myGroupBadge} style={{ background: ms.accent }}>KELOMPOKMU</div>
+            <div className={styles.myGroupContent}>
+              <div className={styles.myGroupAvatar} style={{ background: ms.accent }}>
+                {ms.avatar}
+              </div>
+              <div>
+                <div className={styles.myGroupTitle} style={{ color: ms.accent }}>
+                  Kelompok {myGroup.group_number} · {myGroup.mentor_name}
+                </div>
+                <div className={styles.myGroupMembers}>
+                  {myGroup.members.map((m, i) => (
+                    <span key={i} className={styles.memberChip}
+                      style={{ background: m === activeUser ? ms.accent : "#f1f5f9", color: m === activeUser ? "#fff" : "#475569", fontWeight: m === activeUser ? 800 : 500 }}>
+                      {m === activeUser ? "👤 " : ""}{m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Fase Timeline */}
+      <div className={styles.phaseSection}>
+        <div className={styles.sectionTitle}><CalendarCheck size={14} style={{ display:"inline", verticalAlign:"middle", marginRight:6 }} />Alur &amp; Periode Mentoring</div>
+        <div className={styles.phaseTimeline}>
+          {PHASES.map((p, i) => {
+            const isActive = i === activePhaseIdx;
+            const isPast   = i < activePhaseIdx;
+            return (
+              <div key={i} className={styles.phaseCard}
+                style={{ background: isActive ? p.bg : "#f8fafc", borderColor: isActive ? p.border : "#e2e8f0", opacity: isPast ? 0.55 : 1 }}>
+                <div className={styles.phaseTop}>
+                  <div className={styles.phaseIconBox} style={{ background: isActive ? p.color + "18" : "#f1f5f9" }}>
+                    <p.Icon size={18} color={isActive ? p.color : "#94a3b8"} />
+                  </div>
+                  <div>
+                    <div className={styles.phaseLabel} style={{ color: isActive ? p.color : "#94a3b8" }}>
+                      {p.label}
+                      {isActive && <span className={styles.activeChip} style={{ background: p.color }}>AKTIF</span>}
+                    </div>
+                    <div className={styles.phaseSublabel}>{p.sublabel}</div>
+                  </div>
+                </div>
+                <ul className={styles.phasePoints}>
+                  {p.points.map((pt, j) => (
+                    <li key={j}>
+                      <pt.Icon size={14} color={isActive ? p.color : "#94a3b8"} className={styles.phasePointIcon} />
+                      <span>{pt.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Semua Kelompok per Mentor */}
+      {loading ? (
+        <div className={styles.loading}>Memuat data kelompok...</div>
+      ) : (
+        <div className={styles.allGroupsSection}>
+          <div className={styles.sectionTitle}><Users size={14} style={{ display:"inline", verticalAlign:"middle", marginRight:6 }} />Semua Kelompok Mentoring</div>
+          {mentors.map(mentor => {
+            const ms = MENTOR_STYLES[mentor] || MENTOR_STYLES["Mas Raden"];
+            const mentorGroups = groups.filter(g => g.mentor_name === mentor);
+            if (mentorGroups.length === 0) return null;
+            return (
+              <div key={mentor} className={styles.mentorBlock} style={{ borderColor: ms.border }}>
+                <div className={styles.mentorHeader} style={{ background: ms.light }}>
+                  <div className={styles.mentorAvatar} style={{ background: ms.accent }}>{ms.avatar}</div>
+                  <div>
+                    <div className={styles.mentorName} style={{ color: ms.accent }}>{mentor}</div>
+                    <div className={styles.mentorMeta}>{mentorGroups.length} kelompok · {mentorGroups.reduce((a, g) => a + g.members.length, 0)} peserta</div>
+                  </div>
+                </div>
+                <div className={styles.mentorGroups}>
+                  {mentorGroups.map(group => {
+                    const isOpen = expandedGroup === group.group_number;
+                    const isMine = myGroup?.group_number === group.group_number;
+                    return (
+                      <div key={group.group_number} className={styles.groupRow}
+                        style={{ borderLeft: isMine ? `3px solid ${ms.accent}` : "3px solid transparent" }}>
+                        <button className={styles.groupToggle}
+                          onClick={() => setExpandedGroup(isOpen ? null : group.group_number)}>
+                          <span className={styles.groupNum} style={{ background: ms.accent }}>
+                            Kelompok {group.group_number}
+                          </span>
+                          {isMine && <span className={styles.myTag} style={{ color: ms.accent }}>✦ Kelompokmu</span>}
+                          <span className={styles.groupCount}>{group.members.length} peserta</span>
+                          <span className={styles.chevron}>{isOpen ? "▲" : "▼"}</span>
+                        </button>
+                        {isOpen && (
+                          <div className={styles.memberList}>
+                            {group.members.map((name, idx) => (
+                              <div key={idx} className={styles.memberRow}
+                                style={{ background: name === activeUser ? ms.light : "transparent", fontWeight: name === activeUser ? 800 : 400 }}>
+                                <span className={styles.memberNum}>{idx + 1}</span>
+                                <span style={{ color: name === activeUser ? ms.accent : "#334155" }}>
+                                  {name === activeUser ? "👤 " : ""}{name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

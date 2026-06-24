@@ -7,7 +7,8 @@ import {
   Users, ClipboardCheck, BookOpenCheck, FolderOpen,
   LayoutDashboard, ScrollText, PlayCircle, Trophy,
   ChevronDown, ChevronUp, BarChart2, ImageIcon,
-  CalendarDays, Wrench, Link2, Star,
+  CalendarDays, Wrench, Link2, Star, UserCheck,
+  MessageCircle, GraduationCap, AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { SessionRow, SoftwareRow, LinkRow } from "@/lib/supabase";
@@ -69,6 +70,7 @@ function AdminContent() {
       {tab === "feedback"  && <TabFeedback />}
       {tab === "peserta"   && <TabPeserta />}
       {tab === "penilaian" && <TabPenilaian />}
+      {tab === "kelompok"  && <TabKelompok />}
     </div>
   );
 }
@@ -1636,6 +1638,203 @@ function TabLinks() {
         </div>
         <button className={styles.addRowBtn} onClick={addLink}><Plus size={14} /> Tambah Link</button>
       </div>
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// TAB: KELOMPOK MENTORING (Admin CRUD)
+// ════════════════════════════════════════════════════════
+
+interface GroupRow { group_number: number; mentor_name: string; participant_name: string; }
+interface GroupConfig { group_number: number; mentor_name: string; members: string[]; }
+
+const MENTOR_COLORS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
+  "Mas Raden": { bg: "#eff6ff", border: "#bfdbfe", badge: "#1d4ed8", text: "#1e40af" },
+  "Mas Rifqi":  { bg: "#fefce8", border: "#fde68a", badge: "#b45309", text: "#92400e" },
+  "Mas Faiz":   { bg: "#fdf2f8", border: "#f9a8d4", badge: "#be185d", text: "#9d174d" },
+};
+
+const MENTOR_OPTIONS = ["Mas Raden", "Mas Rifqi", "Mas Faiz"];
+
+// Seed data dari pembagian resmi Batch 3
+const SEED_ROWS: GroupRow[] = [
+  ...["Kalvin Reza Pratama","Rafi Fistra Ali","Binar Aulia Setyawan","Athirah Hamzah","Azya Naurah Sumakhalda","Robertho Kadji","Rinjani Putri Djunaedi","Rizki Amara Putri","Muhammad Thariq Aziz"].map(n=>({group_number:1,mentor_name:"Mas Raden",participant_name:n})),
+  ...["Adinda Dwi Yulianto","Abdullah Yusuf Syahadah","Muhammad Aryasatya Rafliando","Ghalih N. Wicaksono","Arfan Ferdiansyah","Dimas Tri Nur Hidayat","Riyan Alaji","Mujahid Sukarno","Abdul Mujib"].map(n=>({group_number:2,mentor_name:"Mas Raden",participant_name:n})),
+  ...["Agung Ashshiddiqi","Ahmad Asmuri Haruna","Tika Mutiara Ula","Rachmadhiya Salsabila","Camilla Rosanti Budimansyah","Akbar Hidayatuloh","Fathi Muzaqi","Agus Sudiono"].map(n=>({group_number:3,mentor_name:"Mas Raden",participant_name:n})),
+  ...["Alvito Krishna Balapradhana","Supriyadi","Agus Santoso","Kristuanto Nugroho Saputro","Dwiky Himawan Prabowo","Muhammad Maulana Rizki","Harizky Arfianto","Muhammad Asyroful Mujib","Katarina Andrea Laurentia"].map(n=>({group_number:4,mentor_name:"Mas Rifqi",participant_name:n})),
+  ...["Naufal Awaly Raihan","Farel Ahadyatulakbar Aditama","Febrian Fadila Rizky","Fabian Surya Pramudya","Adnan Yusuf Hartawan","Yana Wicaksana","Adnan Ananda","Niken Aprilia Sandyarani","Muhammad Ayyub"].map(n=>({group_number:5,mentor_name:"Mas Rifqi",participant_name:n})),
+  ...["Ferry Febrian","Nabila Nahdatul Husna","Daffa' 'Alim Al Adzin","Muhammad Caesar Almayda Wira","Muhammad Rifki","Najmu Laila","Nadhia Ferlia Fara","Ilham Bagus Wiranto","Salsabila Rosa Batubara"].map(n=>({group_number:6,mentor_name:"Mas Rifqi",participant_name:n})),
+  ...["Indri Puspita","Haidar Ismail","Delia Lathifah","Wahyu Panji Sugiantoro","Lukman Hakim","Zakiya Rozqi Auliya","Aminudin Siregar","Putra Rizki Ramadhan","Alfian Firdaus"].map(n=>({group_number:7,mentor_name:"Mas Faiz",participant_name:n})),
+  ...["Izza Rachman Suwandi","Aprilius Nadzario Mulya Clara","A Yusril Ihza Mahendra","Ramadian Irvanizar","Ester Marlina Mumu","Nawal Syafiq Farihan","Titanio Yudista","Kanesia Tahira","Damar Panoto"].map(n=>({group_number:8,mentor_name:"Mas Faiz",participant_name:n})),
+  ...["Habibi Faridh","Ayesha Amalia Putri","Surya Dewi","Aulia Sugesti Putri","Linda Ambala Tifa Ramadhani","Nadya Fadhilah Febrianti","Ahmad Fauzi Budjang","Saffaanatin Nafiis"].map(n=>({group_number:9,mentor_name:"Mas Faiz",participant_name:n})),
+];
+
+function rowsToGroups(rows: GroupRow[]): GroupConfig[] {
+  const map = new Map<number, GroupConfig>();
+  rows.forEach(r => {
+    if (!map.has(r.group_number)) map.set(r.group_number, { group_number: r.group_number, mentor_name: r.mentor_name, members: [] });
+    map.get(r.group_number)!.members.push(r.participant_name);
+  });
+  return Array.from(map.values()).sort((a, b) => a.group_number - b.group_number);
+}
+
+function TabKelompok() {
+  const [rows, setRows]         = useState<GroupRow[]>([]);
+  const [openGroup, setOpenGroup] = useState<number | null>(1);
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [seeding, setSeeding]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    supabase.from("config_groups").select("group_number,mentor_name,participant_name").order("group_number").then(({ data }) => {
+      setRows((data as GroupRow[]) || []);
+      setLoading(false);
+    });
+  }, []);
+
+  const groups = rowsToGroups(rows);
+
+  const addMember = (groupNum: number, mentor: string) => {
+    setRows(prev => [...prev, { group_number: groupNum, mentor_name: mentor, participant_name: "" }]);
+  };
+
+  const updateMember = (groupNum: number, idx: number, val: string) => {
+    const groupRows = rows.filter(r => r.group_number === groupNum);
+    const globalIdx = rows.indexOf(groupRows[idx]);
+    setRows(prev => prev.map((r, i) => i === globalIdx ? { ...r, participant_name: val } : r));
+  };
+
+  const removeMember = (groupNum: number, idx: number) => {
+    const groupRows = rows.filter(r => r.group_number === groupNum);
+    const globalIdx = rows.indexOf(groupRows[idx]);
+    setRows(prev => prev.filter((_, i) => i !== globalIdx));
+  };
+
+  const addGroup = () => {
+    const nextNum = (groups[groups.length - 1]?.group_number || 0) + 1;
+    setRows(prev => [...prev, { group_number: nextNum, mentor_name: MENTOR_OPTIONS[0], participant_name: "" }]);
+    setOpenGroup(nextNum);
+  };
+
+  const updateGroupMentor = (groupNum: number, mentor: string) => {
+    setRows(prev => prev.map(r => r.group_number === groupNum ? { ...r, mentor_name: mentor } : r));
+  };
+
+  const removeGroup = (groupNum: number) => {
+    if (!confirm(`Hapus Kelompok ${groupNum} dan semua anggotanya?`)) return;
+    setRows(prev => prev.filter(r => r.group_number !== groupNum));
+    if (openGroup === groupNum) setOpenGroup(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const validRows = rows.filter(r => r.participant_name.trim());
+    await supabase.from("config_groups").delete().neq("group_number", -999);
+    if (validRows.length) await supabase.from("config_groups").insert(validRows.map(r => ({ group_number: r.group_number, mentor_name: r.mentor_name, participant_name: r.participant_name.trim() })));
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleSeed = async () => {
+    if (!confirm("Ini akan mengganti semua data kelompok dengan data resmi Batch 3. Lanjutkan?")) return;
+    setSeeding(true);
+    await supabase.from("config_groups").delete().neq("group_number", -999);
+    await supabase.from("config_groups").insert(SEED_ROWS);
+    setRows(SEED_ROWS);
+    setSeeding(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
+  };
+
+  if (loading) return <div className={styles.loading}>Memuat data kelompok...</div>;
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <div>
+          <h2><UserCheck size={20} /> Kelompok Mentoring</h2>
+          <p>Atur pembagian kelompok mentoring — data ini tampil di dashboard peserta</p>
+        </div>
+        <div className={styles.rowActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button onClick={handleSeed} disabled={seeding} style={{ padding: "8px 14px", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 12.5, cursor: "pointer", color: "#475569" }}>
+            {seeding ? "Loading..." : "⬇ Import Data Resmi Batch 3"}
+          </button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan Semua"}
+          </button>
+        </div>
+      </div>
+
+      {/* Groups per mentor */}
+      {MENTOR_OPTIONS.map(mentor => {
+        const color = MENTOR_COLORS[mentor];
+        const mGroups = groups.filter(g => g.mentor_name === mentor);
+        return (
+          <div key={mentor} style={{ background: color.bg, border: `1.5px solid ${color.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: color.badge, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <GraduationCap size={18} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: color.text }}>{mentor}</div>
+                <div style={{ fontSize: 11.5, color: "#64748b" }}>{mGroups.length} kelompok · {mGroups.reduce((a, g) => a + g.members.length, 0)} peserta</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {mGroups.map(group => {
+                const isOpen = openGroup === group.group_number;
+                const groupRows = rows.filter(r => r.group_number === group.group_number);
+                return (
+                  <div key={group.group_number} style={{ background: "#fff", borderRadius: 10, border: `1px solid ${color.border}`, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
+                      <button onClick={() => setOpenGroup(isOpen ? null : group.group_number)}
+                        style={{ flex: 1, background: "none", border: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left", padding: 0 }}>
+                        <span style={{ background: color.badge, color: "#fff", borderRadius: 6, fontSize: 11.5, fontWeight: 800, padding: "3px 10px" }}>
+                          Kelompok {group.group_number}
+                        </span>
+                        <span style={{ fontSize: 12.5, color: "#64748b" }}>{group.members.length} peserta</span>
+                        {isOpen ? <ChevronUp size={15} color="#94a3b8" /> : <ChevronDown size={15} color="#94a3b8" />}
+                      </button>
+                      <select value={group.mentor_name} onChange={e => updateGroupMentor(group.group_number, e.target.value)}
+                        style={{ fontSize: 11.5, padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", color: color.text, background: color.bg, fontWeight: 700 }}>
+                        {MENTOR_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                      <button onClick={() => removeGroup(group.group_number)} style={{ background: "none", border: "none", cursor: "pointer", color: "#fca5a5", padding: "2px 4px" }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    {isOpen && (
+                      <div style={{ borderTop: `1px solid ${color.border}`, padding: "10px 14px" }}>
+                        {groupRows.map((r, idx) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <span style={{ width: 20, fontSize: 11, color: "#cbd5e1", fontWeight: 700, textAlign: "right", flexShrink: 0 }}>{idx + 1}</span>
+                            <input className={styles.input} value={r.participant_name}
+                              onChange={e => updateMember(group.group_number, idx, e.target.value)}
+                              placeholder="Nama peserta..." style={{ flex: 1, fontSize: 12.5 }} />
+                            <button onClick={() => removeMember(group.group_number, idx)}
+                              className={styles.deleteBtn}><Trash2 size={13} /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => addMember(group.group_number, group.mentor_name)}
+                          className={styles.addRowBtn} style={{ marginTop: 6 }}>
+                          <Plus size={13} /> Tambah Anggota
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={addGroup}
+              style={{ marginTop: 10, background: "none", border: `1.5px dashed ${color.border}`, borderRadius: 8, padding: "8px 14px", fontSize: 12, color: color.text, cursor: "pointer", width: "100%" }}>
+              <Plus size={13} /> Tambah Kelompok Baru
+            </button>
+          </div>
+        );
+      })}
     </>
   );
 }

@@ -1,0 +1,296 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 32px 28px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--primary, #1d4ed8);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.02em;
+}
+
+.header p {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── My Group ─────────────────────────────────────────── */
+.myGroupCard {
+  border: 2px solid;
+  border-radius: 14px;
+  padding: 18px 20px;
+  position: relative;
+}
+
+.myGroupBadge {
+  position: absolute;
+  top: -11px;
+  left: 18px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+.myGroupContent {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 6px;
+}
+
+.myGroupAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.myGroupTitle {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.myGroupMembers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.memberChip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+/* ── Phase Timeline ───────────────────────────────────── */
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  letter-spacing: .03em;
+  margin-bottom: 12px;
+}
+
+.phaseSection {}
+
+.phaseTimeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.phaseCard {
+  border: 1.5px solid;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phaseTop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.phaseIconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.phaseLabel {
+  font-size: 12.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activeChip {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 99px;
+  letter-spacing: .04em;
+}
+
+.phaseSublabel {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.phasePoints {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phasePoints li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.phasePointIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── All Groups ───────────────────────────────────────── */
+.allGroupsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mentorBlock {
+  border: 1.5px solid;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.mentorHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.mentorAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.mentorName {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mentorMeta {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.mentorGroups {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.groupRow {
+  border-top: 1px solid #f1f5f9;
+}
+
+.groupToggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.groupToggle:hover {
+  background: #f8fafc;
+}
+
+.groupNum {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.myTag {
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.groupCount {
+  font-size: 12px;
+  color: #94a3b8;
+  flex: 1;
+}
+
+.chevron {
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
+.memberList {
+  border-top: 1px solid #f1f5f9;
+  padding: 8px 0;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: background .1s;
+}
+
+.memberNum {
+  width: 20px;
+  font-size: 11px;
+  color: #cbd5e1;
+  font-weight: 700;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.loading {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 40px;
+}
