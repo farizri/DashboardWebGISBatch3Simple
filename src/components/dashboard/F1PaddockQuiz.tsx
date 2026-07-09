@@ -54,13 +54,21 @@ export default function F1PaddockQuiz() {
   const [recapPage, setRecapPage]       = useState(0);
 
   // Feedback / Evaluasi Sesi
-  const [fbValues, setFbValues] = useState({
-    material_relevance: 3,
-    material_flow_clarity: 3,
-    hands_on_helpfulness: 3,
-    mentor_explanation: 3,
-    facilitator_responsiveness: 3,
-    webgis_project_readiness: 3,
+  const [fbValues, setFbValues] = useState<Record<string, number | null>>({
+    material_relevance: null,
+    material_flow_clarity: null,
+    hands_on_helpfulness: null,
+    mentor_explanation: null,
+    facilitator_responsiveness: null,
+    webgis_project_readiness: null,
+  });
+  const [fbTouched, setFbTouched] = useState<Record<string, boolean>>({
+    material_relevance: false,
+    material_flow_clarity: false,
+    hands_on_helpfulness: false,
+    mentor_explanation: false,
+    facilitator_responsiveness: false,
+    webgis_project_readiness: false,
   });
   const [fbText, setFbText]         = useState("");
   const [fbSubmitting, setFbSubmitting] = useState(false);
@@ -229,7 +237,8 @@ export default function F1PaddockQuiz() {
 
   const returnToLobby = () => {
     setQuizState("LOBBY");
-    setFbValues({ material_relevance: 3, material_flow_clarity: 3, hands_on_helpfulness: 3, mentor_explanation: 3, facilitator_responsiveness: 3, webgis_project_readiness: 3 });
+    setFbValues({ material_relevance: null, material_flow_clarity: null, hands_on_helpfulness: null, mentor_explanation: null, facilitator_responsiveness: null, webgis_project_readiness: null });
+    setFbTouched({ material_relevance: false, material_flow_clarity: false, hands_on_helpfulness: false, mentor_explanation: false, facilitator_responsiveness: false, webgis_project_readiness: false });
     setFbText("");
   };
 
@@ -444,27 +453,33 @@ export default function F1PaddockQuiz() {
                 { key: "mentor_explanation",        label: "Seberapa membantu penjelasan mentor dalam memahami materi?" },
                 { key: "facilitator_responsiveness",label: "Seberapa responsif fasilitator dalam membantu kebutuhan atau pertanyaan peserta?" },
                 { key: "webgis_project_readiness",  label: "Seberapa membantu sesi ini dalam mempersiapkan Anda mengerjakan project WebGIS?" },
-              ] as { key: keyof typeof fbValues; label: string }[]).map((item, idx) => {
+              ] as { key: string; label: string }[]).map((item, idx) => {
                 const val = fbValues[item.key];
-                const pct = ((val - 1) / 4) * 100;
+                const isTouched = fbTouched[item.key];
+                const pct = val !== null ? ((val - 1) / 3) * 100 : 0;
                 return (
                   <div key={item.key} className={styles.feedbackSliderItem}>
                     <div className={styles.feedbackSliderLabel}>
                       <span className={styles.feedbackSliderNum}>{idx + 1}</span>
                       {item.label}
+                      {!isTouched && <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, marginLeft: 6 }}>*wajib diisi</span>}
                     </div>
                     <div className={styles.feedbackSliderTrack}>
                       <span className={styles.feedbackScaleLabel}>Sangat tidak puas</span>
                       <input
                         type="range"
-                        min={1} max={5} step={1}
-                        value={val}
-                        className={styles.feedbackRangeInput}
-                        style={{ "--progress": `${pct}%` } as React.CSSProperties}
-                        onChange={e => setFbValues(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
+                        min={1} max={4} step={1}
+                        value={val ?? 2}
+                        className={`${styles.feedbackRangeInput} ${!isTouched ? styles.feedbackRangeUntouched : ''}`}
+                        style={{ "--progress": isTouched ? `${pct}%` : '0%' } as React.CSSProperties}
+                        onChange={e => {
+                          const newVal = Number(e.target.value);
+                          setFbValues(prev => ({ ...prev, [item.key]: newVal }));
+                          setFbTouched(prev => ({ ...prev, [item.key]: true }));
+                        }}
                       />
                       <span className={`${styles.feedbackScaleLabel} ${styles.feedbackScaleLabelRight}`}>Sangat puas</span>
-                      <span className={styles.feedbackValuePill}>{val}</span>
+                      <span className={`${styles.feedbackValuePill} ${!isTouched ? styles.feedbackValuePillUntouched : ''}`}>{isTouched ? val : '--'}</span>
                     </div>
                   </div>
                 );
@@ -485,10 +500,19 @@ export default function F1PaddockQuiz() {
               />
             </div>
 
+            {!Object.values(fbTouched).every(Boolean) && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px",
+                background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 14px" }}>
+                <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+                <p style={{ margin: 0, fontSize: 12.5, color: "#991b1b", lineHeight: 1.5 }}>
+                  Silakan isi semua penilaian slider di atas sebelum mengirim evaluasi.
+                </p>
+              </div>
+            )}
             <button
               className={styles.feedbackSubmitBtn}
               onClick={handleFeedbackSubmit}
-              disabled={fbSubmitting}
+              disabled={fbSubmitting || !Object.values(fbTouched).every(Boolean)}
             >
               <Send size={15} />
               {fbSubmitting ? "Mengirim evaluasi..." : "Kirim Evaluasi & Lihat Hasil"}

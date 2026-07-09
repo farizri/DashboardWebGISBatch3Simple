@@ -1477,3 +1477,23 @@
   cursor: not-allowed;
 }
 
+.feedbackRangeUntouched {
+  background: #e2e8f0 !important;
+  opacity: 0.5;
+}
+
+.feedbackRangeUntouched::-webkit-slider-thumb {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.feedbackRangeUntouched::-moz-range-thumb {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.feedbackValuePillUntouched {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
