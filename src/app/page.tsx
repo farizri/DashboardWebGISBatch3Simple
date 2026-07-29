@@ -9,6 +9,7 @@ import TaskMonitoring from "@/components/dashboard/TaskMonitoring";
 import PlatformSoftware from "@/components/dashboard/PlatformSoftware";
 import MateriVideo from "@/components/dashboard/MateriVideo";
 import F1PaddockQuiz from "@/components/dashboard/F1PaddockQuiz";
+import F1PaddockExam from "@/components/dashboard/F1PaddockExam";
 import FinalProjectComing from "@/components/dashboard/FinalProjectComing";
 import LinkPendukung from "@/components/dashboard/LinkPendukung";
 import MentoringGroup from "@/components/dashboard/MentoringGroup";
@@ -48,6 +49,8 @@ function DashboardContent() {
       return <FinalProjectComing />;
     case "mentoring":
       return <MentoringGroup />;
+    case "exam":
+      return <F1PaddockExam />;
     case "quiz":
       return <F1PaddockQuiz />;
     case "links":

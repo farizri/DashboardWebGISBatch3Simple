@@ -121,6 +121,24 @@ export interface LinkRow {
   sort_order: number;
 }
 
+export interface ExamQuestionRow {
+  id?: string;
+  sort_order: number;
+  question_text: string;
+  options: string[];
+  correct_answer: number;
+  image_url: string;
+}
+
+export interface ExamScoreRow {
+  id?: string;
+  participant: string;
+  email?: string;
+  score: number;
+  attempt_no?: number;
+  completed_at?: string;
+}
+
 export interface QuizFeedbackRow {
   id?: string;
   participant: string;

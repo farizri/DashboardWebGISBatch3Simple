@@ -20,6 +20,7 @@ import {
   Users,
   BadgeCheck,
   UserCheck,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -67,6 +68,7 @@ const ADMIN_MENU: MenuSection[] = [
   {
     title: "PORTFOLIO",
     items: [
+      { id: "exam",      name: "Exam",                  icon: ListChecks },
       { id: "final",     name: "Final Project",         icon: Trophy },
     ],
   },

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ScrollText, PlayCircle, Trophy,
   ChevronDown, ChevronUp, BarChart2, ImageIcon,
   CalendarDays, Wrench, Link2, Star, UserCheck,
-  MessageCircle, GraduationCap, AlertCircle,
+  MessageCircle, GraduationCap, AlertCircle, ListChecks,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { SessionRow, SoftwareRow, LinkRow } from "@/lib/supabase";
@@ -22,6 +22,11 @@ interface QuizQuestion {
   id?: string; session_key: number; sort_order: number;
   question_text: string; options: string[]; correct_answer: number; image_url: string;
 }
+interface ExamQuestion {
+  id?: string; sort_order: number;
+  question_text: string; options: string[]; correct_answer: number; image_url: string;
+}
+interface ExamScore { participant: string; score: number; attempt_no: number; }
 interface Submission  { id: string; participant: string; task_id: number; task_number: string; task_title: string; url: string; submitted_at: string; }
 interface FinalProject{ participant: string; url: string; submitted_at: string; }
 interface QuizFeedback{
@@ -61,6 +66,7 @@ function AdminContent() {
       {tab === "tatib"     && <TabTatib />}
       {tab === "schedule"  && <TabSchedule />}
       {tab === "absensi"   && <TabAbsensi />}
+      {tab === "exam"      && <TabExam />}
       {tab === "posttest"  && <TabPostTest />}
       {tab === "tugas"     && <TabTugas />}
       {tab === "materi"    && <TabMateri />}
@@ -699,6 +705,221 @@ function TabPostTest() {
 // Helper for quiz question state updates
 function getSessionQuestionsFrom(all: QuizQuestion[], key: number) {
   return all.filter(q => q.session_key === key).sort((a, b) => a.sort_order - b.sort_order);
+}
+
+// ════════════════════════════════════════════════════════
+// TAB: EXAM (PRE TEST)
+// ════════════════════════════════════════════════════════
+function TabExam() {
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
+  const [scores, setScores]       = useState<ExamScore[]>([]);
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
+  const [rekap_page, setRekapPage] = useState(0);
+  const REKAP_PAGE_SIZE = 16;
+
+  useEffect(() => {
+    async function load() {
+      const [{ data: q }, { data: s }, { data: p }] = await Promise.all([
+        supabase.from("exam_questions").select("*").order("sort_order"),
+        supabase.from("exam_scores").select("participant,score,attempt_no"),
+        supabase.from("config_participants").select("name").order("sort_order"),
+      ]);
+      const qs = (q || []).map((r: ExamQuestion & { options: unknown }) => ({
+        ...r, options: Array.isArray(r.options) ? r.options : ["","","",""],
+      }));
+      setQuestions((qs as ExamQuestion[]).sort((a, b) => a.sort_order - b.sort_order));
+      setScores((s as ExamScore[]) || []);
+      setParticipants((p || []).map((x: { name: string }) => x.name));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const addQuestion = () => {
+    setQuestions(prev => [...prev, {
+      sort_order: prev.length,
+      question_text: "", options: ["","","",""], correct_answer: 0, image_url: "",
+    }]);
+  };
+
+  const updateQuestion = (qi: number, field: keyof ExamQuestion, val: string | number | string[]) => {
+    setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, [field]: val } : q));
+  };
+
+  const updateOption = (qi: number, oi: number, val: string) => {
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qi) return q;
+      const opts = [...q.options];
+      opts[oi] = val;
+      return { ...q, options: opts };
+    }));
+  };
+
+  const removeQuestion = (qi: number) => {
+    setQuestions(prev => prev.filter((_, i) => i !== qi));
+  };
+
+  const handleSaveAll = async () => {
+    setSaving(true);
+    await supabase.from("exam_questions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (questions.length) {
+      const rows = questions.map((q, i) => ({
+        sort_order: i,
+        question_text: q.question_text,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        image_url: q.image_url || "",
+      }));
+      await supabase.from("exam_questions").insert(rows);
+    }
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2500);
+  };
+
+  const bestScore = (name: string) => {
+    const attempts = scores.filter(s => s.participant === name);
+    if (!attempts.length) return null;
+    return Math.max(...attempts.map(a => a.score));
+  };
+
+  const attemptCount = (name: string) => scores.filter(s => s.participant === name).length;
+
+  if (loading) return <div className={styles.loading}>Memuat data exam...</div>;
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <div>
+          <h2><ListChecks size={20} /> Exam</h2>
+          <p>Kelola soal exam — target 25 soal pilihan ganda, wajib dikerjakan peserta (satu kali) sebelum mengumpulkan Final Project</p>
+        </div>
+        <div className={styles.rowActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button className={styles.saveBtn} onClick={handleSaveAll} disabled={saving}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan Semua Soal"}
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.cardTitle}>
+          <ListChecks size={14} /> Daftar Soal Exam
+          <span style={{ fontSize: 11, color: questions.length === 25 ? "#22c55e" : "#f97316", marginLeft: 8, fontWeight: 700 }}>
+            {questions.length}/25 soal
+          </span>
+        </div>
+
+        {questions.map((q, qi) => (
+          <div key={qi} className={styles.questionCard}>
+            <div className={styles.questionHeader}>
+              <span className={styles.questionNum}>Soal {qi + 1}</span>
+              <button className={styles.deleteBtn} onClick={() => removeQuestion(qi)} title="Hapus soal">
+                <Trash2 size={14} />
+              </button>
+            </div>
+
+            <div className={styles.field}>
+              <label>Pertanyaan</label>
+              <textarea className={styles.textarea} rows={2}
+                value={q.question_text}
+                onChange={e => updateQuestion(qi, "question_text", e.target.value)}
+                placeholder="Tulis pertanyaan di sini..." />
+            </div>
+
+            <div className={styles.field}>
+              <label><ImageIcon size={11} style={{ display:"inline", marginRight:4 }} />URL Gambar (opsional)</label>
+              <input className={styles.input} value={q.image_url}
+                onChange={e => updateQuestion(qi, "image_url", e.target.value)}
+                placeholder="https://..." />
+            </div>
+
+            <div className={styles.field}>
+              <label>Pilihan Jawaban — pilih yang benar</label>
+              <div className={styles.optionsGrid}>
+                {q.options.map((opt, oi) => (
+                  <div key={oi} className={`${styles.optionRow} ${q.correct_answer === oi ? styles.optionRowCorrect : ""}`}>
+                    <button
+                      className={`${styles.correctBtn} ${q.correct_answer === oi ? styles.correctBtnActive : ""}`}
+                      onClick={() => updateQuestion(qi, "correct_answer", oi)}
+                      title="Tandai sebagai jawaban benar"
+                    >
+                      {q.correct_answer === oi ? "✓" : String.fromCharCode(65 + oi)}
+                    </button>
+                    <input
+                      className={styles.optionInput}
+                      value={opt}
+                      onChange={e => updateOption(qi, oi, e.target.value)}
+                      placeholder={`Pilihan ${String.fromCharCode(65 + oi)}...`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <button className={styles.addRowBtn} onClick={addQuestion}>
+          <Plus size={14} /> Tambah Soal
+        </button>
+
+        <div className={styles.rowActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button className={styles.saveBtn} onClick={handleSaveAll} disabled={saving}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan Semua Soal"}
+          </button>
+        </div>
+      </div>
+
+      {/* Rekapitulasi Skor */}
+      <div className={styles.card} style={{ padding: "20px 16px" }}>
+        <div className={styles.cardTitle}><BarChart2 size={14} /> Rekapitulasi Skor Exam</div>
+        <div className={styles.scoresWrap}>
+          <table className={styles.scoresTable}>
+            <thead>
+              <tr>
+                <th>Peserta</th>
+                <th>Skor Terbaik</th>
+                <th>Jumlah Attempt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {participants.slice(rekap_page * REKAP_PAGE_SIZE, (rekap_page + 1) * REKAP_PAGE_SIZE).map(p => {
+                const best = bestScore(p);
+                const attempts = attemptCount(p);
+                return (
+                  <tr key={p}>
+                    <td>{p}</td>
+                    <td>
+                      {best === null
+                        ? <span className={styles.scoreEmpty}>—</span>
+                        : <span className={`${styles.scorePill} ${best >= 80 ? styles.scoreHigh : best >= 60 ? styles.scoreMid : styles.scoreLow}`}>{best}</span>
+                      }
+                    </td>
+                    <td>{attempts}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {Math.ceil(participants.length / REKAP_PAGE_SIZE) > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "16px 0 4px" }}>
+            <button onClick={() => setRekapPage(p => Math.max(0, p - 1))} disabled={rekap_page === 0}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: rekap_page === 0 ? "#f8fafc" : "#fff", color: rekap_page === 0 ? "#cbd5e1" : "#334155", cursor: rekap_page === 0 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{rekap_page + 1} / {Math.ceil(participants.length / REKAP_PAGE_SIZE)}</span>
+            <button onClick={() => setRekapPage(p => Math.min(Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1, p + 1))} disabled={rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1}
+              style={{ padding: "6px 14px", borderRadius: "6px", border: "1px solid #e2e8f0", background: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "#f8fafc" : "#fff", color: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "#cbd5e1" : "#334155", cursor: rekap_page === Math.ceil(participants.length / REKAP_PAGE_SIZE) - 1 ? "not-allowed" : "pointer", fontSize: 13 }}>
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
 // ════════════════════════════════════════════════════════

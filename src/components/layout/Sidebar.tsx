@@ -14,6 +14,7 @@ import {
   Link2,
   Shield,
   UserCheck,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -57,6 +58,7 @@ const MENU_SECTIONS: MenuSection[] = [
     title: "PORTFOLIO",
     items: [
       { id: "mentoring",     name: "Kelompok Mentoring", icon: UserCheck },
+      { id: "exam",          name: "Exam",               icon: ListChecks },
       { id: "final_project", name: "Final Project",      icon: Trophy },
     ],
   },
