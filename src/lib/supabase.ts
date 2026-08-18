@@ -36,6 +36,8 @@ export interface QuizScoreRow {
 export interface FinalProjectRow {
   participant: string;
   url: string;
+  github_url?: string;
+  publication_url?: string;
   submitted_at?: string;
   updated_at?: string;
 }

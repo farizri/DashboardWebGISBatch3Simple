@@ -59,11 +59,13 @@ CREATE POLICY "anon write quiz_scores"  ON quiz_scores FOR ALL USING (true) WITH
 -- ═══════════════════════════════════════════════════════════════
 DROP TABLE IF EXISTS final_projects CASCADE;
 CREATE TABLE final_projects (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  participant  text UNIQUE NOT NULL,
-  url          text NOT NULL,
-  submitted_at timestamptz DEFAULT now(),
-  updated_at   timestamptz DEFAULT now()
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  participant      text UNIQUE NOT NULL,
+  url              text NOT NULL,
+  github_url       text DEFAULT '',
+  publication_url  text DEFAULT '',
+  submitted_at     timestamptz DEFAULT now(),
+  updated_at       timestamptz DEFAULT now()
 );
 ALTER TABLE final_projects ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "public read final_projects" ON final_projects FOR SELECT USING (true);

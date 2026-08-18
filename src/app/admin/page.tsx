@@ -28,7 +28,7 @@ interface ExamQuestion {
 }
 interface ExamScore { participant: string; score: number; attempt_no: number; }
 interface Submission  { id: string; participant: string; task_id: number; task_number: string; task_title: string; url: string; submitted_at: string; }
-interface FinalProject{ participant: string; url: string; submitted_at: string; }
+interface FinalProject{ participant: string; url: string; github_url?: string; publication_url?: string; submitted_at: string; }
 interface QuizFeedback{
   id: string; participant: string; session_key: number;
   material_relevance: number; material_flow_clarity: number;
@@ -1372,7 +1372,11 @@ function TabFinal() {
               <div key={fp.participant} className={styles.listRow} style={{ gridTemplateColumns: "1fr 1fr auto" }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{fp.participant}</span>
                 <span style={{ fontSize: 12, color: "#64748b" }}>{new Date(fp.submitted_at).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" })}</span>
-                <a className={styles.linkBtn} href={fp.url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Lihat</a>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <a className={styles.linkBtn} href={fp.url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> WebGIS</a>
+                  {fp.github_url && <a className={styles.linkBtn} href={fp.github_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> GitHub</a>}
+                  {fp.publication_url && <a className={styles.linkBtn} href={fp.publication_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Publikasi</a>}
+                </div>
               </div>
             ))}
           </div>

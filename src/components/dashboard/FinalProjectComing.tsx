@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trophy, ExternalLink, Hourglass, CheckCircle2, Globe } from "lucide-react";
+import { Trophy, ExternalLink, CheckCircle2, Globe, GitFork, Newspaper, Send, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import styles from "./FinalProjectComing.module.css";
 
-interface FinalProject { participant: string; url: string; submitted_at: string; }
+interface FinalProject {
+  participant: string;
+  url: string;
+  github_url?: string;
+  publication_url?: string;
+  submitted_at: string;
+}
 
 const KETENTUAN_OUTPUT = [
   "Landing page / dashboard sederhana yang rapi dan informatif",
@@ -26,18 +32,48 @@ const FOKUS_PENILAIAN = [
 ];
 
 export default function FinalProjectComing() {
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [participantList, setParticipantList] = useState<{ name: string; email: string }[]>([]);
   const [projects, setProjects]         = useState<FinalProject[]>([]);
   const [loading, setLoading]           = useState(true);
+
+  const [selectedUser, setSelectedUser] = useState("");
+  const [webgisUrl, setWebgisUrl]       = useState("");
+  const [githubUrl, setGithubUrl]       = useState("");
+  const [publicationUrl, setPublicationUrl] = useState("");
+  const [submitting, setSubmitting]     = useState(false);
+  const [saved, setSaved]               = useState(false);
+
+  const prefillForm = (name: string, fromProjects: FinalProject[]) => {
+    const existing = fromProjects.find(p => p.participant === name);
+    setWebgisUrl(existing?.url || "");
+    setGithubUrl(existing?.github_url || "");
+    setPublicationUrl(existing?.publication_url || "");
+    setSaved(false);
+  };
 
   useEffect(() => {
     async function load() {
       const [{ data: p }, { data: fp }] = await Promise.all([
-        supabase.from("config_participants").select("name").order("sort_order"),
-        supabase.from("final_projects").select("participant,url,submitted_at"),
+        supabase.from("config_participants").select("name,email").order("sort_order"),
+        supabase.from("final_projects").select("participant,url,github_url,publication_url,submitted_at"),
       ]);
-      setParticipants((p || []).map((x: { name: string }) => x.name));
-      setProjects((fp as FinalProject[]) || []);
+      const list = (p || []) as { name: string; email: string }[];
+      const fetchedProjects = (fp as FinalProject[]) || [];
+      setParticipantList(list);
+      setProjects(fetchedProjects);
+
+      const savedName = localStorage.getItem("mapid_active_username");
+      const found = list.find(u => u.name === savedName);
+      const activeName = found ? found.name : (list[0]?.name || "");
+      if (activeName) {
+        setSelectedUser(activeName);
+        prefillForm(activeName, fetchedProjects);
+        if (!found) {
+          localStorage.setItem("mapid_active_username", activeName);
+          localStorage.setItem("mapid_active_useremail", list[0]?.email || "");
+        }
+      }
+
       setLoading(false);
     }
     load();
@@ -46,6 +82,45 @@ export default function FinalProjectComing() {
   const projectMap: Record<string, FinalProject> = {};
   projects.forEach(fp => { projectMap[fp.participant] = fp; });
 
+  const handleUserChange = (name: string) => {
+    setSelectedUser(name);
+    prefillForm(name, projects);
+    localStorage.setItem("mapid_active_username", name);
+    const found = participantList.find(u => u.name === name);
+    localStorage.setItem("mapid_active_useremail", found?.email || "peserta@mapid.co.id");
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  const canSubmit = selectedUser && webgisUrl.trim() && githubUrl.trim() && publicationUrl.trim();
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("final_projects").upsert({
+      participant: selectedUser,
+      url: webgisUrl.trim(),
+      github_url: githubUrl.trim(),
+      publication_url: publicationUrl.trim(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "participant" });
+    setSubmitting(false);
+    if (error) {
+      alert(`Gagal mengumpulkan final project: ${error.message}`);
+      return;
+    }
+    setProjects(prev => {
+      const others = prev.filter(p => p.participant !== selectedUser);
+      return [...others, {
+        participant: selectedUser, url: webgisUrl.trim(),
+        github_url: githubUrl.trim(), publication_url: publicationUrl.trim(),
+        submitted_at: new Date().toISOString(),
+      }];
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const participants = participantList.map(p => p.name);
   const PAGE_SIZE = 16;
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(participants.length / PAGE_SIZE);
@@ -58,14 +133,41 @@ export default function FinalProjectComing() {
         <p>Rekapitulasi pengumpulan final project peserta WebGIS Bootcamp Batch 3.</p>
       </div>
 
-      {/* Coming Soon */}
-      <div className={styles.comingSoonCard}>
-        <Hourglass size={24} color="#94a3b8" />
-        <div>
-          <strong>Form Pengumpulan Final Project</strong>
-          <p>Form pengumpulan akan dibuka mendekati akhir program. Pantau terus halaman ini!</p>
+      {/* Form Pengumpulan */}
+      <div className={styles.submitCard}>
+        <div className={styles.infoTitle}><Send size={15} /> Form Pengumpulan Final Project</div>
+
+        <div className={styles.formField}>
+          <label>Pilih Nama Anda (Peserta)</label>
+          <select className={styles.formSelect} value={selectedUser} onChange={e => handleUserChange(e.target.value)}>
+            {participantList.map(u => <option key={u.name} value={u.name}>{u.name}</option>)}
+          </select>
         </div>
-        <span className={styles.comingSoonBadge}>COMING SOON</span>
+
+        <div className={styles.formField}>
+          <label><Globe size={12} /> Link WebGIS (Public Deployment)</label>
+          <input className={styles.formInput} value={webgisUrl} onChange={e => setWebgisUrl(e.target.value)}
+            placeholder="https://project-anda.netlify.app" />
+        </div>
+
+        <div className={styles.formField}>
+          <label><GitFork size={12} /> Link GitHub Repository</label>
+          <input className={styles.formInput} value={githubUrl} onChange={e => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/username/repo" />
+        </div>
+
+        <div className={styles.formField}>
+          <label><Newspaper size={12} /> Link Data Publication</label>
+          <input className={styles.formInput} value={publicationUrl} onChange={e => setPublicationUrl(e.target.value)}
+            placeholder="https://mapid.co.id/blog/artikel-anda" />
+        </div>
+
+        <div className={styles.formActions}>
+          {saved && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+          <button className={styles.submitBtn} onClick={handleSubmit} disabled={!canSubmit || submitting}>
+            <Send size={14} /> {submitting ? "Mengumpulkan..." : "Kumpulkan Final Project"}
+          </button>
+        </div>
       </div>
 
       {/* Info Grid — 2 cards side by side */}
@@ -107,7 +209,7 @@ export default function FinalProjectComing() {
               <tr>
                 <th>#</th>
                 <th>Nama Peserta</th>
-                <th>Link WebGIS</th>
+                <th>Link</th>
                 <th>Tanggal</th>
               </tr>
             </thead>
@@ -121,9 +223,21 @@ export default function FinalProjectComing() {
                     <td className={styles.tdName}>{name}</td>
                     <td>
                       {fp
-                        ? <a href={fp.url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
-                            <ExternalLink size={11} /> Lihat WebGIS
-                          </a>
+                        ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <a href={fp.url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
+                              <ExternalLink size={11} /> WebGIS
+                            </a>
+                            {fp.github_url && (
+                              <a href={fp.github_url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
+                                <GitFork size={11} /> GitHub
+                              </a>
+                            )}
+                            {fp.publication_url && (
+                              <a href={fp.publication_url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
+                                <Newspaper size={11} /> Publikasi
+                              </a>
+                            )}
+                          </div>
                         : <span className={styles.dash}>Belum dikumpulkan</span>
                       }
                     </td>
