@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trophy, ExternalLink, CheckCircle2, Globe, GitFork, Newspaper, Send, CheckCircle } from "lucide-react";
+import { Trophy, CheckCircle2, Globe, GitFork, Newspaper, Send, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import styles from "./FinalProjectComing.module.css";
-
-interface FinalProject {
-  participant: string;
-  url: string;
-  github_url?: string;
-  publication_url?: string;
-  submitted_at: string;
-}
 
 const KETENTUAN_OUTPUT = [
   "Landing page / dashboard sederhana yang rapi dan informatif",
@@ -23,17 +15,17 @@ const KETENTUAN_OUTPUT = [
 ];
 
 const FOKUS_PENILAIAN = [
-  { label: "Industry Relevance",            desc: "Relevansi dengan kebutuhan industri dan use case nyata di lapangan." },
-  { label: "Problem Solving & Storytelling", desc: "Kemampuan mengangkat permasalahan spasial dan menyajikannya secara naratif." },
-  { label: "UI/UX & Visual Clarity",        desc: "Tampilan dashboard yang bersih, intuitif, dan nyaman digunakan." },
-  { label: "Struktur & Reasoning Code",     desc: "Kualitas kode, keterbacaan, dan kemampuan menjelaskan logika implementasi." },
-  { label: "Interaktivitas WebGIS",         desc: "Kelengkapan fitur spasial dan tingkat interaksi user pada peta." },
-  { label: "Progress & Consistency",        desc: "Konsistensi pengerjaan tugas dari sesi awal hingga deployment akhir." },
+  { label: "UI/UX & Visual Clarity", weight: 35,
+    desc: "Kerapian layout, kejelasan visual, dan kenyamanan penggunaan dashboard/WebGIS." },
+  { label: "Implementasi Spasial", weight: 45,
+    desc: "Kelengkapan & kualitas fitur spasial: integrasi data, minimal 1 fitur analisis (heatmap/buffer/isochrone), dan interaktivitas peta." },
+  { label: "Publikasi", weight: 20,
+    desc: "Kualitas penulisan artikel/blog Data Publication: kejelasan storytelling, struktur tulisan, dan insight yang disampaikan." },
 ];
 
 export default function FinalProjectComing() {
   const [participantList, setParticipantList] = useState<{ name: string; email: string }[]>([]);
-  const [projects, setProjects]         = useState<FinalProject[]>([]);
+  const [completedSet, setCompletedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading]           = useState(true);
 
   const [selectedUser, setSelectedUser] = useState("");
@@ -43,31 +35,33 @@ export default function FinalProjectComing() {
   const [submitting, setSubmitting]     = useState(false);
   const [saved, setSaved]               = useState(false);
 
-  const prefillForm = (name: string, fromProjects: FinalProject[]) => {
-    const existing = fromProjects.find(p => p.participant === name);
-    setWebgisUrl(existing?.url || "");
-    setGithubUrl(existing?.github_url || "");
-    setPublicationUrl(existing?.publication_url || "");
+  // Ambil hanya submission milik nama yang dipilih — jangan expose link peserta lain ke client.
+  const fetchOwnSubmission = async (name: string) => {
+    const { data } = await supabase.from("final_projects")
+      .select("url,github_url,publication_url").eq("participant", name).maybeSingle();
+    const own = data as { url: string; github_url?: string; publication_url?: string } | null;
+    setWebgisUrl(own?.url || "");
+    setGithubUrl(own?.github_url || "");
+    setPublicationUrl(own?.publication_url || "");
     setSaved(false);
   };
 
   useEffect(() => {
     async function load() {
-      const [{ data: p }, { data: fp }] = await Promise.all([
+      const [{ data: p }, { data: doneRows }] = await Promise.all([
         supabase.from("config_participants").select("name,email").order("sort_order"),
-        supabase.from("final_projects").select("participant,url,github_url,publication_url,submitted_at"),
+        supabase.from("final_projects").select("participant"),
       ]);
       const list = (p || []) as { name: string; email: string }[];
-      const fetchedProjects = (fp as FinalProject[]) || [];
       setParticipantList(list);
-      setProjects(fetchedProjects);
+      setCompletedSet(new Set((doneRows || []).map((r: { participant: string }) => r.participant)));
 
       const savedName = localStorage.getItem("mapid_active_username");
       const found = list.find(u => u.name === savedName);
       const activeName = found ? found.name : (list[0]?.name || "");
       if (activeName) {
         setSelectedUser(activeName);
-        prefillForm(activeName, fetchedProjects);
+        await fetchOwnSubmission(activeName);
         if (!found) {
           localStorage.setItem("mapid_active_username", activeName);
           localStorage.setItem("mapid_active_useremail", list[0]?.email || "");
@@ -79,12 +73,9 @@ export default function FinalProjectComing() {
     load();
   }, []);
 
-  const projectMap: Record<string, FinalProject> = {};
-  projects.forEach(fp => { projectMap[fp.participant] = fp; });
-
-  const handleUserChange = (name: string) => {
+  const handleUserChange = async (name: string) => {
     setSelectedUser(name);
-    prefillForm(name, projects);
+    await fetchOwnSubmission(name);
     localStorage.setItem("mapid_active_username", name);
     const found = participantList.find(u => u.name === name);
     localStorage.setItem("mapid_active_useremail", found?.email || "peserta@mapid.co.id");
@@ -108,14 +99,7 @@ export default function FinalProjectComing() {
       alert(`Gagal mengumpulkan final project: ${error.message}`);
       return;
     }
-    setProjects(prev => {
-      const others = prev.filter(p => p.participant !== selectedUser);
-      return [...others, {
-        participant: selectedUser, url: webgisUrl.trim(),
-        github_url: githubUrl.trim(), publication_url: publicationUrl.trim(),
-        submitted_at: new Date().toISOString(),
-      }];
-    });
+    setCompletedSet(prev => new Set(prev).add(selectedUser));
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -130,7 +114,7 @@ export default function FinalProjectComing() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2><Trophy size={22} /> Final Project WebGIS</h2>
-        <p>Rekapitulasi pengumpulan final project peserta WebGIS Bootcamp Batch 3.</p>
+        <p>Kumpulkan link Final Project peserta WebGIS Bootcamp Batch 3.</p>
       </div>
 
       {/* Form Pengumpulan */}
@@ -183,11 +167,11 @@ export default function FinalProjectComing() {
         </div>
 
         <div className={styles.penilaianCard}>
-          <div className={styles.infoTitle}><Trophy size={15} /> Fokus Penilaian Final Project</div>
+          <div className={styles.infoTitle}><Trophy size={15} /> Fokus Penilaian Final Project (Total 100%)</div>
           <div className={styles.penilaianGrid}>
             {FOKUS_PENILAIAN.map((p, i) => (
               <div key={i} className={styles.penilaianItem}>
-                <span className={styles.penilaianNum}>{i + 1}</span>
+                <span className={styles.penilaianNum}>{p.weight}%</span>
                 <div>
                   <strong>{p.label}</strong>
                   <p>{p.desc}</p>
@@ -199,9 +183,9 @@ export default function FinalProjectComing() {
 
       </div>
 
-      {/* Rekapitulasi */}
+      {/* Checklist — status saja, link detail hanya di Admin Panel */}
       <div className={styles.rekapCard}>
-        <div className={styles.rekapTitle}><Trophy size={14} /> Rekapitulasi Pengumpulan Final Project</div>
+        <div className={styles.rekapTitle}><Trophy size={14} /> Checklist Pengumpulan Final Project</div>
         {loading && <div className={styles.loading}>Memuat data...</div>}
         {!loading && (
           <table className={styles.table}>
@@ -209,42 +193,20 @@ export default function FinalProjectComing() {
               <tr>
                 <th>#</th>
                 <th>Nama Peserta</th>
-                <th>Link</th>
-                <th>Tanggal</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {pagedParticipants.map((name, i) => {
-                const fp = projectMap[name];
                 const globalIdx = page * PAGE_SIZE + i + 1;
                 return (
                   <tr key={name}>
                     <td className={styles.tdNum}>{globalIdx}</td>
                     <td className={styles.tdName}>{name}</td>
-                    <td>
-                      {fp
-                        ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <a href={fp.url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
-                              <ExternalLink size={11} /> WebGIS
-                            </a>
-                            {fp.github_url && (
-                              <a href={fp.github_url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
-                                <GitFork size={11} /> GitHub
-                              </a>
-                            )}
-                            {fp.publication_url && (
-                              <a href={fp.publication_url} target="_blank" rel="noreferrer" className={styles.linkBtn}>
-                                <Newspaper size={11} /> Publikasi
-                              </a>
-                            )}
-                          </div>
-                        : <span className={styles.dash}>Belum dikumpulkan</span>
-                      }
-                    </td>
-                    <td className={styles.tdDate}>
-                      {fp
-                        ? new Date(fp.submitted_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-                        : "—"
+                    <td style={{ textAlign: "center" }}>
+                      {completedSet.has(name)
+                        ? <CheckCircle2 size={16} className={styles.checkIcon} />
+                        : <span className={styles.dash}>-</span>
                       }
                     </td>
                   </tr>

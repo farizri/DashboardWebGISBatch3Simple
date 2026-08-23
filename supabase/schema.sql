@@ -556,5 +556,47 @@ CREATE POLICY "public read exam_scores" ON exam_scores FOR SELECT USING (true);
 CREATE POLICY "anon write exam_scores"  ON exam_scores FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
--- DONE. 16 tabel, RLS, policies, seed data lengkap.
+-- 18. FINAL PROJECT SCORES — penilaian admin (UI 35% / Spasial 45% / Publikasi 20%)
+-- ═══════════════════════════════════════════════════════════════
+DROP TABLE IF EXISTS final_project_scores CASCADE;
+CREATE TABLE final_project_scores (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  participant      text UNIQUE NOT NULL,
+  ui_score         integer NOT NULL CHECK (ui_score BETWEEN 50 AND 100),
+  spasial_score    integer NOT NULL CHECK (spasial_score BETWEEN 50 AND 100),
+  publikasi_score  integer NOT NULL CHECK (publikasi_score BETWEEN 50 AND 100),
+  weighted_average integer NOT NULL CHECK (weighted_average BETWEEN 0 AND 100),
+  scored_at        timestamptz DEFAULT now()
+);
+ALTER TABLE final_project_scores ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read final_project_scores" ON final_project_scores FOR SELECT USING (true);
+CREATE POLICY "anon write final_project_scores"  ON final_project_scores FOR ALL USING (true) WITH CHECK (true);
+
+-- ═══════════════════════════════════════════════════════════════
+-- 19. CONFIG GROUPS — pembagian kelompok mentoring (Raden / Rifqi / Faiz)
+-- ═══════════════════════════════════════════════════════════════
+DROP TABLE IF EXISTS config_groups CASCADE;
+CREATE TABLE config_groups (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_number      integer NOT NULL,
+  mentor_name       text NOT NULL,
+  participant_name  text NOT NULL
+);
+ALTER TABLE config_groups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read config_groups" ON config_groups FOR SELECT USING (true);
+CREATE POLICY "anon write config_groups"  ON config_groups FOR ALL USING (true) WITH CHECK (true);
+
+INSERT INTO config_groups (group_number, mentor_name, participant_name) VALUES
+(1, 'Raden Pranantya', 'Kalvin Reza Pratama'), (1, 'Raden Pranantya', 'Rafi Fistra Ali'), (1, 'Raden Pranantya', 'Binar Aulia Setyawan'), (1, 'Raden Pranantya', 'Athirah Hamzah'), (1, 'Raden Pranantya', 'Azya Naurah Sumakhalda'), (1, 'Raden Pranantya', 'Robertho Kadji'), (1, 'Raden Pranantya', 'Rinjani Putri Djunaedi'), (1, 'Raden Pranantya', 'Rizki Amara Putri'), (1, 'Raden Pranantya', 'Muhammad Thariq Aziz'),
+(2, 'Raden Pranantya', 'Adinda Dwi Yulianto'), (2, 'Raden Pranantya', 'Abdullah Yusuf Syahadah'), (2, 'Raden Pranantya', 'Muhammad Aryasatya Rafliando'), (2, 'Raden Pranantya', 'Ghalih N. Wicaksono'), (2, 'Raden Pranantya', 'Arfan Ferdiansyah'), (2, 'Raden Pranantya', 'Dimas Tri Nur Hidayat'), (2, 'Raden Pranantya', 'Riyan Alaji'), (2, 'Raden Pranantya', 'Mujahid Sukarno'), (2, 'Raden Pranantya', 'Abdul Mujib'),
+(3, 'Raden Pranantya', 'Agung Ashshiddiqi'), (3, 'Raden Pranantya', 'Ahmad Asmuri Haruna'), (3, 'Raden Pranantya', 'Tika Mutiara Ula'), (3, 'Raden Pranantya', 'Rachmadhiya Salsabila'), (3, 'Raden Pranantya', 'Camilla Rosanti Budimansyah'), (3, 'Raden Pranantya', 'Akbar Hidayatuloh'), (3, 'Raden Pranantya', 'Fathi Muzaqi'), (3, 'Raden Pranantya', 'Agus Sudiono'),
+(4, 'Rifqi Naufal', 'Alvito Krishna Balapradhana'), (4, 'Rifqi Naufal', 'Supriyadi'), (4, 'Rifqi Naufal', 'Agus Santoso'), (4, 'Rifqi Naufal', 'Kristuanto Nugroho Saputro'), (4, 'Rifqi Naufal', 'Dwiky Himawan Prabowo'), (4, 'Rifqi Naufal', 'Muhammad Maulana Rizki'), (4, 'Rifqi Naufal', 'Harizky Arfianto'), (4, 'Rifqi Naufal', 'Muhammad Asyroful Mujib'), (4, 'Rifqi Naufal', 'Katarina Andrea Laurentia'),
+(5, 'Rifqi Naufal', 'Naufal Awaly Raihan'), (5, 'Rifqi Naufal', 'Farel Ahadyatulakbar Aditama'), (5, 'Rifqi Naufal', 'Febrian Fadila Rizky'), (5, 'Rifqi Naufal', 'Fabian Surya Pramudya'), (5, 'Rifqi Naufal', 'Adnan Yusuf Hartawan'), (5, 'Rifqi Naufal', 'Yana Wicaksana'), (5, 'Rifqi Naufal', 'Adnan Ananda'), (5, 'Rifqi Naufal', 'Niken Aprilia Sandyarani'), (5, 'Rifqi Naufal', 'Muhammad Ayyub'),
+(6, 'Rifqi Naufal', 'Ferry Febrian'), (6, 'Rifqi Naufal', 'Nabila Nahdatul Husna'), (6, 'Rifqi Naufal', 'Daffa'' ''Alim Al Adzin'), (6, 'Rifqi Naufal', 'Muhammad Caesar Almayda Wira'), (6, 'Rifqi Naufal', 'Muhammad Rifki'), (6, 'Rifqi Naufal', 'Najmu Laila'), (6, 'Rifqi Naufal', 'Nadhia Ferlia Fara'), (6, 'Rifqi Naufal', 'Ilham Bagus Wiranto'), (6, 'Rifqi Naufal', 'Salsabila Rosa Batubara'),
+(7, 'Ahmad Zaenun Faiz', 'Indri Puspita'), (7, 'Ahmad Zaenun Faiz', 'Haidar Ismail'), (7, 'Ahmad Zaenun Faiz', 'Delia Lathifah'), (7, 'Ahmad Zaenun Faiz', 'Wahyu Panji Sugiantoro'), (7, 'Ahmad Zaenun Faiz', 'Lukman Hakim'), (7, 'Ahmad Zaenun Faiz', 'Zakiya Rozqi Auliya'), (7, 'Ahmad Zaenun Faiz', 'Aminudin Siregar'), (7, 'Ahmad Zaenun Faiz', 'Putra Rizki Ramadhan'), (7, 'Ahmad Zaenun Faiz', 'Alfian Firdaus'),
+(8, 'Ahmad Zaenun Faiz', 'Izza Rachman Suwandi'), (8, 'Ahmad Zaenun Faiz', 'Aprilius Nadzario Mulya Clara'), (8, 'Ahmad Zaenun Faiz', 'A Yusril Ihza Mahendra'), (8, 'Ahmad Zaenun Faiz', 'Ramadian Irvanizar'), (8, 'Ahmad Zaenun Faiz', 'Ester Marlina Mumu'), (8, 'Ahmad Zaenun Faiz', 'Nawal Syafiq Farihan'), (8, 'Ahmad Zaenun Faiz', 'Titanio Yudista'), (8, 'Ahmad Zaenun Faiz', 'Kanesia Tahira'), (8, 'Ahmad Zaenun Faiz', 'Damar Panoto'),
+(9, 'Ahmad Zaenun Faiz', 'Habibi Faridh'), (9, 'Ahmad Zaenun Faiz', 'Ayesha Amalia Putri'), (9, 'Ahmad Zaenun Faiz', 'Surya Dewi'), (9, 'Ahmad Zaenun Faiz', 'Aulia Sugesti Putri'), (9, 'Ahmad Zaenun Faiz', 'Linda Ambala Tifa Ramadhani'), (9, 'Ahmad Zaenun Faiz', 'Nadya Fadhilah Febrianti'), (9, 'Ahmad Zaenun Faiz', 'Ahmad Fauzi Budjang'), (9, 'Ahmad Zaenun Faiz', 'Saffaanatin Nafiis');
+
+-- ═══════════════════════════════════════════════════════════════
+-- DONE. 19 tabel, RLS, policies, seed data lengkap.
 -- ═══════════════════════════════════════════════════════════════

@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ScrollText,
@@ -77,11 +76,10 @@ const ADMIN_MENU: MenuSection[] = [
 export default function AdminSidebar() {
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab") || "overview";
-  const router = useRouter();
 
   const handleLogout = async () => {
     await fetch("/api/admin/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    window.location.href = "/admin/login";
   };
 
   return (

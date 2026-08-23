@@ -42,6 +42,16 @@ export interface FinalProjectRow {
   updated_at?: string;
 }
 
+export interface FinalProjectScoreRow {
+  id?: string;
+  participant: string;
+  ui_score: number;
+  spasial_score: number;
+  publikasi_score: number;
+  weighted_average: number;
+  scored_at?: string;
+}
+
 export interface ParticipantRow {
   id?: string;
   name: string;

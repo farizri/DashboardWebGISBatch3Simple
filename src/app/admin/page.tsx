@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ScrollText, PlayCircle, Trophy,
   ChevronDown, ChevronUp, BarChart2, ImageIcon,
   CalendarDays, Wrench, Link2, Star, UserCheck,
-  MessageCircle, GraduationCap, AlertCircle, ListChecks,
+  MessageCircle, GraduationCap, AlertCircle, ListChecks, Clock, Pencil,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { SessionRow, SoftwareRow, LinkRow } from "@/lib/supabase";
@@ -29,6 +29,7 @@ interface ExamQuestion {
 interface ExamScore { participant: string; score: number; attempt_no: number; }
 interface Submission  { id: string; participant: string; task_id: number; task_number: string; task_title: string; url: string; submitted_at: string; }
 interface FinalProject{ participant: string; url: string; github_url?: string; publication_url?: string; submitted_at: string; }
+interface FinalProjectScore { participant: string; ui_score: number; spasial_score: number; publikasi_score: number; weighted_average: number; }
 interface QuizFeedback{
   id: string; participant: string; session_key: number;
   material_relevance: number; material_flow_clarity: number;
@@ -54,6 +55,16 @@ const QUIZ_SESSIONS = [
   "Sesi 14: Feature Implementation Part 3 — Isochrone",
   "Sesi 15: WebGIS Refinement and Deployment",
   "Sesi 16 & 17: Python for Spatial Data (Bonus)",
+];
+
+// ─── Kriteria Penilaian Final Project (total 100%) ────────
+const PENILAIAN_CRITERIA: { draftKey: "ui" | "spasial" | "publikasi"; label: string; weight: number; guide: string }[] = [
+  { draftKey: "ui", label: "UI/UX & Visual Clarity", weight: 35,
+    guide: "Kerapian layout, kejelasan visual, dan kenyamanan penggunaan dashboard/WebGIS." },
+  { draftKey: "spasial", label: "Implementasi Spasial", weight: 45,
+    guide: "Kelengkapan & kualitas fitur spasial: integrasi data, minimal 1 fitur analisis (heatmap/buffer/isochrone), dan interaktivitas peta." },
+  { draftKey: "publikasi", label: "Publikasi", weight: 20,
+    guide: "Kualitas penulisan artikel/blog Data Publication: kejelasan storytelling, struktur tulisan, dan insight yang disampaikan." },
 ];
 
 // ─── Main Router ──────────────────────────────────────────
@@ -1337,51 +1348,219 @@ function TabMateri() {
 // ════════════════════════════════════════════════════════
 function TabFinal() {
   const [projects, setProjects] = useState<FinalProject[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [scoresMap, setScoresMap] = useState<Record<string, FinalProjectScore>>({});
+  const [mentorMap, setMentorMap] = useState<Record<string, string>>({});
+  const [draft, setDraft] = useState<Record<string, { ui: number; spasial: number; publikasi: number }>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [saved, setSaved]   = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("final_projects").select("*").order("submitted_at", { ascending: false }).then(({ data }) => {
-      setProjects((data as FinalProject[]) || []);
+    async function load() {
+      const [{ data: fp }, { data: sc }, { data: g }] = await Promise.all([
+        supabase.from("final_projects").select("*").order("submitted_at", { ascending: false }),
+        supabase.from("final_project_scores").select("*"),
+        supabase.from("config_groups").select("mentor_name,participant_name"),
+      ]);
+      const projectsData = (fp as FinalProject[]) || [];
+      const scMap: Record<string, FinalProjectScore> = {};
+      (sc as FinalProjectScore[] || []).forEach(r => { scMap[r.participant] = r; });
+      const mMap: Record<string, string> = {};
+      (g as { mentor_name: string; participant_name: string }[] || []).forEach(r => { mMap[r.participant_name] = r.mentor_name; });
+      const draftInit: Record<string, { ui: number; spasial: number; publikasi: number }> = {};
+      projectsData.forEach(p => {
+        const existing = scMap[p.participant];
+        draftInit[p.participant] = {
+          ui: existing?.ui_score ?? 75,
+          spasial: existing?.spasial_score ?? 75,
+          publikasi: existing?.publikasi_score ?? 75,
+        };
+      });
+      setProjects(projectsData);
+      setScoresMap(scMap);
+      setMentorMap(mMap);
+      setDraft(draftInit);
       setLoading(false);
-    });
+    }
+    load();
   }, []);
 
+  const computeWeighted = (ui: number, spasial: number, publikasi: number) =>
+    Math.round(ui * 0.35 + spasial * 0.45 + publikasi * 0.20);
+
+  const updateDraft = (participant: string, key: "ui" | "spasial" | "publikasi", val: number) => {
+    setDraft(prev => ({ ...prev, [participant]: { ...prev[participant], [key]: val } }));
+  };
+
+  const handleSaveScore = async (participant: string) => {
+    const d = draft[participant];
+    if (!d) return;
+    const weighted = computeWeighted(d.ui, d.spasial, d.publikasi);
+    setSaving(prev => ({ ...prev, [participant]: true }));
+    await supabase.from("final_project_scores").upsert({
+      participant, ui_score: d.ui, spasial_score: d.spasial, publikasi_score: d.publikasi,
+      weighted_average: weighted, scored_at: new Date().toISOString(),
+    }, { onConflict: "participant" });
+    setScoresMap(prev => ({ ...prev, [participant]: { participant, ui_score: d.ui, spasial_score: d.spasial, publikasi_score: d.publikasi, weighted_average: weighted } }));
+    setSaving(prev => ({ ...prev, [participant]: false }));
+    setSaved(prev => ({ ...prev, [participant]: true }));
+    setTimeout(() => setSaved(prev => ({ ...prev, [participant]: false })), 2500);
+  };
+
   if (loading) return <div className={styles.loading}>Memuat final project...</div>;
+
+  const renderScoreRow = (fp: FinalProject) => {
+    const d = draft[fp.participant] || { ui: 75, spasial: 75, publikasi: 75 };
+    const liveScore = computeWeighted(d.ui, d.spasial, d.publikasi);
+    const existingScore = scoresMap[fp.participant];
+    const isDone = !!existingScore;
+    const isOpen = expanded === fp.participant;
+    return (
+      <div key={fp.participant}>
+        <div
+          className={`${styles.mentorRow} ${isDone ? styles.mentorRowDone : styles.mentorRowPending}`}
+          onClick={() => setExpanded(isOpen ? null : fp.participant)}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+        >
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1e293b" }}>{fp.participant}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {isDone
+              ? <span className={`${styles.scorePill} ${existingScore.weighted_average >= 80 ? styles.scoreHigh : existingScore.weighted_average >= 60 ? styles.scoreMid : styles.scoreLow}`}>{existingScore.weighted_average}</span>
+              : <Clock size={14} color="#d97706" />
+            }
+            <Pencil size={12} color={isDone ? "#16a34a" : "#d97706"} />
+          </div>
+        </div>
+
+        {isOpen && (
+          <div className={styles.questionCard} style={{ marginTop: 8 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <a className={styles.linkBtn} href={fp.url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> WebGIS</a>
+              {fp.github_url && <a className={styles.linkBtn} href={fp.github_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> GitHub</a>}
+              {fp.publication_url && <a className={styles.linkBtn} href={fp.publication_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Publikasi</a>}
+            </div>
+
+            {PENILAIAN_CRITERIA.map(c => (
+              <div key={c.draftKey} className={styles.field} style={{ marginBottom: 12 }}>
+                <label>{c.label} ({c.weight}%) — {c.guide}</label>
+                <div className={styles.sliderWrap}>
+                  <input type="range" min={50} max={100} step={5}
+                    value={d[c.draftKey]}
+                    onChange={e => updateDraft(fp.participant, c.draftKey, Number(e.target.value))}
+                    className={styles.sliderInput} />
+                  <div className={styles.sliderValue}>{d[c.draftKey]}</div>
+                </div>
+              </div>
+            ))}
+
+            <div className={styles.rowActions} style={{ justifyContent: "space-between" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                Nilai Akhir:
+                <span className={`${styles.scorePill} ${liveScore >= 80 ? styles.scoreHigh : liveScore >= 60 ? styles.scoreMid : styles.scoreLow}`}>{liveScore}</span>
+                {existingScore && existingScore.weighted_average !== liveScore && (
+                  <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>(tersimpan: {existingScore.weighted_average})</span>
+                )}
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {saved[fp.participant] && <span className={styles.savedMsg}><CheckCircle size={14} /> Tersimpan</span>}
+                <button className={styles.saveBtn} onClick={() => handleSaveScore(fp.participant)} disabled={saving[fp.participant]}>
+                  <Save size={14} /> {saving[fp.participant] ? "Menyimpan..." : isDone ? "Update Nilai" : "Simpan Nilai"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const projectsByMentor: Record<string, FinalProject[]> = {};
+  const unassigned: FinalProject[] = [];
+  projects.forEach(p => {
+    const mentor = mentorMap[p.participant];
+    if (mentor) {
+      (projectsByMentor[mentor] ||= []).push(p);
+    } else {
+      unassigned.push(p);
+    }
+  });
 
   return (
     <>
       <div className={styles.panelHeader}>
         <div>
           <h2><Trophy size={20} /> Final Project</h2>
-          <p>Pantau pengumpulan final project peserta</p>
+          <p>Pantau pengumpulan &amp; beri penilaian final project peserta, dikelompokkan per mentor</p>
         </div>
       </div>
+
+      {/* Panduan Penilaian */}
       <div className={styles.card}>
-        <div className={styles.cardTitle}><Trophy size={14} /> Daftar Pengumpulan</div>
-        {projects.length === 0 && (
-          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Belum ada final project yang dikumpulkan</div>
-        )}
-        {projects.length > 0 && (
-          <div className={styles.listCard}>
-            <div className={styles.listRow} style={{ gridTemplateColumns: "1fr 1fr auto", background: "#f8fafc" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>PESERTA</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>TANGGAL</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>LINK</span>
-            </div>
-            {projects.map(fp => (
-              <div key={fp.participant} className={styles.listRow} style={{ gridTemplateColumns: "1fr 1fr auto" }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{fp.participant}</span>
-                <span style={{ fontSize: 12, color: "#64748b" }}>{new Date(fp.submitted_at).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" })}</span>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <a className={styles.linkBtn} href={fp.url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> WebGIS</a>
-                  {fp.github_url && <a className={styles.linkBtn} href={fp.github_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> GitHub</a>}
-                  {fp.publication_url && <a className={styles.linkBtn} href={fp.publication_url} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Publikasi</a>}
-                </div>
+        <div className={styles.cardTitle}><BarChart2 size={14} /> Panduan Penilaian (Total 100%)</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {PENILAIAN_CRITERIA.map(c => (
+            <div key={c.draftKey} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ flexShrink: 0, minWidth: 44, textAlign: "center", padding: "3px 0", borderRadius: 999, background: "#eff6ff", color: "#5272b8", fontSize: 12, fontWeight: 800 }}>
+                {c.weight}%
+              </span>
+              <div>
+                <strong style={{ fontSize: 13, color: "var(--primary)" }}>{c.label}</strong>
+                <p style={{ fontSize: 12, color: "#64748b", margin: "2px 0 0" }}>{c.guide}</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
+
+      {projects.length === 0 && (
+        <div className={styles.card}>
+          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Belum ada final project yang dikumpulkan</div>
+        </div>
+      )}
+
+      {/* Kartu per mentor: Raden Pranantya / Rifqi Naufal / Ahmad Zaenun Faiz — 3 kolom */}
+      {projects.length > 0 && (
+        <div className={styles.mentorGrid}>
+          {MENTOR_OPTIONS.map(mentor => {
+            const color = MENTOR_COLORS[mentor];
+            const mentorProjects = projectsByMentor[mentor] || [];
+            const doneCount = mentorProjects.filter(p => scoresMap[p.participant]).length;
+            return (
+              <div key={mentor} style={{ background: color.bg, border: `1.5px solid ${color.border}`, borderRadius: 14, padding: "16px 14px" }}>
+                <div className={styles.mentorColumnHead}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: color.badge, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <GraduationCap size={18} color="#fff" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: color.text }}>{mentor}</div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>{doneCount}/{mentorProjects.length} dinilai</div>
+                  </div>
+                </div>
+                {mentorProjects.length === 0 ? (
+                  <div style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "16px 0" }}>Belum ada submission</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {mentorProjects.map(renderScoreRow)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Peserta yang belum masuk ke kelompok mentoring manapun */}
+      {unassigned.length > 0 && (
+        <div style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "16px 18px", marginTop: 18 }}>
+          <div style={{ fontWeight: 800, fontSize: 15, color: "#475569", marginBottom: 14 }}>
+            Belum Dikelompokkan ({unassigned.length})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {unassigned.map(renderScoreRow)}
+          </div>
+        </div>
+      )}
     </>
   );
 }

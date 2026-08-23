@@ -587,6 +587,33 @@
 
 .linkBtn:hover { background: #eff6ff; border-color: var(--accent-indigo); }
 
+/* ── Final Project: 3 kolom per mentor ───────────────────── */
+.mentorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mentorColumnHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mentorRow {
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+
+.mentorRow:hover { filter: brightness(0.98); }
+
+.mentorRowDone   { background: #f0fdf4; border: 1px solid #86efac; }
+.mentorRowPending{ background: #fffbeb; border: 1px solid #fde68a; }
+
 /* ── Quiz Question Card ───────────────────────────────── */
 .questionCard {
   border: 1px solid var(--border);
@@ -677,6 +704,7 @@
   .page { padding: 18px 14px; }
   .formGrid { grid-template-columns: 1fr; }
   .panelHeader { flex-direction: column; }
+  .mentorGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
